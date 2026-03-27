@@ -1,7 +1,7 @@
 # TrackCar Lambda 구현 설계서 (Java)
 
 - 작성일: 2026-03-28
-- 버전: v3.1
+- 버전: v3.2
 - 상태: 초안
 - 기반: TrackCar 플랫폼 아키텍처 상세 설계 v3.0.1
 - **구현 언어: Java 25 + AWS Lambda RequestHandler 패턴**
@@ -57,6 +57,7 @@ ext {
     set('lombokVersion', "1.18.44")
     set('logbackVersion', "1.5.8")
     set('jose4jVersion', "0.9.6")
+    set('rdsDataApiClientVersion', "2.0.0")
 }
 
 dependencyManagement {
@@ -87,6 +88,9 @@ dependencies {
     
     // JWT (for Cognito authentication)
     implementation "org.bitbucket.b_c:jose4j:${jose4jVersion}"
+    
+    // RDS Data API Client Library (named parameter binding)
+    implementation "software.amazon.rdsdata:rds-data-api-client-library-java:${rdsDataApiClientVersion}"
     
     // Lombok
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
@@ -730,7 +734,57 @@ public class CognitoUserManager {
 
 ---
 
-## 8. 변경 이력 (Changelog)
+## 8. RDS Data API Client Library
+
+### 8.1 개요
+
+[RDS Data API Client Library](https://github.com/awslabs/rds-data-api-client-library-java)를 사용하면 Named parameter 바인딩이 가능합니다.
+
+```groovy
+// build.gradle
+implementation "software.amazon.rdsdata:rds-data-api-client-library-java:2.0.0"
+```
+
+### 8.2 헬퍼 메서드 사용법
+
+```java
+// Named parameter 바인딩
+List<Map<String, Object>> results = executeQueryNew(
+    "SELECT * FROM table WHERE id = :id AND status = :status",
+    "id", vehicleId,
+    "status", "ACTIVE"
+);
+
+// INSERT/UPDATE
+executeUpdateNew(
+    "INSERT INTO table (name, value) VALUES (:name, :value)",
+    "name", name,
+    "value", value
+);
+
+// COUNT
+long count = executeCountNew(
+    "SELECT COUNT(*) FROM table WHERE status = :status",
+    "status", "ACTIVE"
+);
+```
+
+### 8.3 장점
+
+| 항목 | 기존 SDK | Client Library |
+|------|---------|---------------|
+| 파라미터 문법 | `$1`, `$2` positional | `:name` named |
+| 가독성 | 낮음 | 높음 |
+| SQL 가독성 | 나쁨 | 좋음 |
+
+---
+
+## 9. 변경 이력 (Changelog)
+
+- **v3.2 (2026-03-28):**
+  - RDS Data API Client Library 추가 (`software.amazon.rdsdata:rds-data-api-client-library-java:2.0.0`)
+  - AuroraRepository에 Named parameter 헬퍼 메서드 추가
+  - JAR 크기: 31MB → 33MB
 
 - **v3.1 (2026-03-28):**
   - CognitoUserManager 추가 (Cognito Admin API 래퍼)
@@ -739,8 +793,6 @@ public class CognitoUserManager {
   - cognitoidentityprovider SDK 추가
   - MobileRequestContext 추가
   - MobileHandler 추가 (Mobile API 처리)
-
-- **v3.0 (2026-03-27):**
 
 - **v3.0 (2026-03-27):**
   - Java 25로 업그레이드
@@ -761,11 +813,12 @@ public class CognitoUserManager {
 
 ---
 
-## 8. 참고 문서
+## 10. 참고 문서
 
 | 문서명 | 버전 | 요약 |
 |--------|------|------|
-| TrackCar Aurora PostgreSQL 물리 스키마 명세서 | v3.0 | Aurora 테이블 정의 |
+| TrackCar Aurora PostgreSQL 물리 스키마 명세서 | v3.1 | Aurora 테이블 정의 |
+| RDS Data API Client Library | 2.0.0 | Named parameter 바인딩 |
 | TrackCar DynamoDB 물리 스키마 명세서 | v2.0 | DynamoDB 테이블 정의 |
 | TrackCar 플랫폼 아키텍처 상세 설계 | v3.0.1 | 전체 시스템 아키텍처 |
 | AWS Lambda Developer Guide | - | Lambda 기본 개념 |
