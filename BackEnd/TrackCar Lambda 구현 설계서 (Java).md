@@ -1,7 +1,7 @@
 # TrackCar Lambda 구현 설계서 (Java)
 
-- 작성일: 2026-03-27
-- 버전: v3.0
+- 작성일: 2026-03-28
+- 버전: v3.1
 - 상태: 초안
 - 기반: TrackCar 플랫폼 아키텍처 상세 설계 v3.0.1
 - **구현 언어: Java 25 + AWS Lambda RequestHandler 패턴**
@@ -56,6 +56,7 @@ ext {
     set('jacksonVersion', "2.17.2")
     set('lombokVersion', "1.18.44")
     set('logbackVersion', "1.5.8")
+    set('jose4jVersion', "0.9.6")
 }
 
 dependencyManagement {
@@ -74,6 +75,7 @@ dependencies {
     implementation 'software.amazon.awssdk:iot'
     implementation 'software.amazon.awssdk:secretsmanager'
     implementation 'software.amazon.awssdk:cloudwatch'
+    implementation 'software.amazon.awssdk:cognitoidentityprovider'
     
     // AWS Lambda Events (SQS, EventBridge, API Gateway)
     implementation 'com.amazonaws:aws-lambda-java-events:3.1.0'
@@ -82,6 +84,9 @@ dependencies {
     // JSON (pure Jackson, no Spring)
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    
+    // JWT (for Cognito authentication)
+    implementation "org.bitbucket.b_c:jose4j:${jose4jVersion}"
     
     // Lombok
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
@@ -115,6 +120,8 @@ aws-functions/
 │   ├── api/                                      # API Adapter
 │   │   └── ApiAdapterHandler.java                # API Gateway 트리거
 │   ├── common/                                   # 공통
+│   │   ├── context/
+│   │   │   └── MobileRequestContext.java        # Mobile API 요청 context
 │   │   ├── model/
 │   │   │   ├── TelemetryPayload.java
 │   │   │   ├── CleanStreamRecord.java
@@ -129,8 +136,13 @@ aws-functions/
 │   │   │   ├── ValidationException.java
 │   │   │   └── InternalException.java
 │   │   └── util/
+│   │       ├── CognitoAuthValidator.java         # JWT 검증
+│   │       ├── CognitoUserManager.java          # Cognito Admin API
 │   │       ├── MetricsLogger.java
 │   │       └── JsonUtils.java
+│   ├── api/                                      # REST API
+│   │   └── handlers/
+│   │       └── MobileHandler.java                 # Mobile API Handler
 ├── src/main/resources/
 │   └── logback.xml
 └── src/test/java/
@@ -665,11 +677,70 @@ String bucketName = System.getenv("RAW_TELEMETRY_BUCKET");
 // eTAS API
 String etasApiUrl = System.getenv("ETAS_API_URL");
 String etasApiKey = System.getenv("ETAS_API_KEY");
+
+// Cognito 연결
+String cognitoUserPoolId = System.getenv("COGNITO_USER_POOL_ID");
+String cognitoClientId = System.getenv("COGNITO_CLIENT_ID");
 ```
 
 ---
 
-## 7. 변경 이력 (Changelog)
+## 7. Cognito 연동
+
+### 7.1 CognitoAuthValidator (JWT 검증)
+
+Cognito에서 발급된 JWT 토큰을 검증합니다:
+
+```java
+// CognitoAuthValidator.java
+public class CognitoAuthValidator {
+    
+    public AuthResult validateToken(String token) {
+        // JWKS fetching and caching
+        // JWT signature verification
+        // Audience validation
+        // Claims extraction (sub, email, cognito:groups, custom:*)
+    }
+}
+```
+
+### 7.2 CognitoUserManager (Cognito Admin API)
+
+Cognito User Pool 사용자를 관리합니다:
+
+```java
+// CognitoUserManager.java
+public class CognitoUserManager {
+    
+    public InviteResult inviteUser(String email, String name, 
+                                  String temporaryPassword, 
+                                  List<String> groups,
+                                  Map<String, String> customAttributes) {
+        // admin_create_user 호출
+        // 임시 비밀번호 발송
+        // 그룹 할당
+    }
+    
+    public boolean disableUser(String username);
+    public boolean enableUser(String username);
+    public boolean deleteUser(String username);
+    public boolean resendInvitation(String email);
+}
+```
+
+---
+
+## 8. 변경 이력 (Changelog)
+
+- **v3.1 (2026-03-28):**
+  - CognitoUserManager 추가 (Cognito Admin API 래퍼)
+  - CognitoAuthValidator 추가 (JWT 검증)
+  - jose4j 라이브러리 추가
+  - cognitoidentityprovider SDK 추가
+  - MobileRequestContext 추가
+  - MobileHandler 추가 (Mobile API 처리)
+
+- **v3.0 (2026-03-27):**
 
 - **v3.0 (2026-03-27):**
   - Java 25로 업그레이드

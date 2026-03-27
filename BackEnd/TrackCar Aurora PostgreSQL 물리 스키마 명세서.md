@@ -1,7 +1,7 @@
 # TrackCar Aurora PostgreSQL 물리 스키마 명세서
 
-- 작성일: 2026-03-27
-- 버전: v3.0
+- 작성일: 2026-03-28
+- 버전: v3.1
 - 상태: 초안
 - 기반: TrackCar 플랫폼 아키텍처 상세 설계 v3.0.1
 - **변경: RDS PostgreSQL → Aurora PostgreSQL (Serverless v2, Data API)**
@@ -451,74 +451,165 @@ CREATE INDEX idx_alert_status ON alert_event(status);
 
 ---
 
-### 3.10 User (사용자)
+### 3.10 Trip Route Summary (운행 경로 요약)
+
+Mobile Trip Detail 화면에 필요한 주요 경유지 좌표만 저장 (전체 포인트 아님)
+
+```sql
+CREATE TABLE trip_route_summary (
+    route_id         VARCHAR(36) PRIMARY KEY,
+    trip_id         VARCHAR(36) NOT NULL REFERENCES trip_meta(trip_id),
+    vehicle_id       VARCHAR(36) NOT NULL REFERENCES vehicle(vehicle_id),
+    route_points     JSONB NOT NULL DEFAULT '[]',  -- [{lat, lng, recorded_at, speed}]
+    location_summary VARCHAR(200),                  -- 간략한 주소 요약
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT uk_trip_route UNIQUE (trip_id)
+);
+
+CREATE INDEX idx_trip_route_trip_id ON trip_route_summary(trip_id);
+CREATE INDEX idx_trip_route_vehicle_id ON trip_route_summary(vehicle_id);
+```
+
+| 컬럼 | 타입 | NULL | 설명 |
+|------|------|------|------|
+| route_id | VARCHAR(36) | NO | 경로 UUID (PK) |
+| trip_id | VARCHAR(36) | NO | 운행 FK (UNIQUE) |
+| vehicle_id | VARCHAR(36) | NO | 차량 FK |
+| route_points | JSONB | NO | 주요 경유지 좌표 배열 |
+| location_summary | VARCHAR(200) | YES | 간략한 주소 요약 |
+| created_at | TIMESTAMPTZ | YES | 생성 시각 |
+| updated_at | TIMESTAMPTZ | YES | 수정 시각 |
+
+**route_points JSONB 예시:**
+```json
+[
+  {"latitude": 37.5665, "longitude": 126.9780, "recorded_at": "2026-03-25T08:00:00Z", "speed": 0},
+  {"latitude": 37.5745, "longitude": 126.9850, "recorded_at": "2026-03-25T09:00:00Z", "speed": 45},
+  {"latitude": 37.5820, "longitude": 127.0000, "recorded_at": "2026-03-25T10:00:00Z", "speed": 0}
+]
+```
+
+---
+
+### 3.11 Trip Event (운행 이벤트)
+
+운행 중 발생하는 주요 이벤트 (IGNITION_ON, STOP, IGNITION_OFF 등)
+
+```sql
+CREATE TABLE trip_event (
+    event_id         VARCHAR(36) PRIMARY KEY,
+    trip_id          VARCHAR(36) NOT NULL REFERENCES trip_meta(trip_id),
+    vehicle_id       VARCHAR(36) NOT NULL REFERENCES vehicle(vehicle_id),
+    event_type       VARCHAR(30) NOT NULL,  -- IGNITION_ON, STOP, IGNITION_OFF, OVERSPEED, etc.
+    description      VARCHAR(200),
+    occurred_at      TIMESTAMP WITH TIME ZONE NOT NULL,
+    duration_min     INTEGER,              -- STOP 이벤트 시 정차 시간
+    location_summary VARCHAR(200),          -- 간략한 주소 요약
+    latitude         DECIMAL(10, 7),
+    longitude        DECIMAL(10, 7),
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_trip_event_trip_id ON trip_event(trip_id);
+CREATE INDEX idx_trip_event_vehicle_id ON trip_event(vehicle_id);
+CREATE INDEX idx_trip_event_occurred_at ON trip_event(occurred_at);
+CREATE INDEX idx_trip_event_type ON trip_event(event_type);
+```
+
+| 컬럼 | 타입 | NULL | 설명 |
+|------|------|------|------|
+| event_id | VARCHAR(36) | NO | 이벤트 UUID (PK) |
+| trip_id | VARCHAR(36) | NO | 운행 FK |
+| vehicle_id | VARCHAR(36) | NO | 차량 FK |
+| event_type | VARCHAR(30) | NO | 이벤트 유형 |
+| description | VARCHAR(200) | YES | 설명 |
+| occurred_at | TIMESTAMPTZ | NO | 발생 시각 |
+| duration_min | INTEGER | YES | 정차 시간(분) |
+| location_summary | VARCHAR(200) | YES | 간략한 주소 요약 |
+| latitude | DECIMAL(10,7) | YES | 발생 위도 |
+| longitude | DECIMAL(10,7) | YES | 발생 경도 |
+| created_at | TIMESTAMPTZ | YES | 생성 시각 |
+
+**event_type ENUM 값:**
+- `IGNITION_ON`: 시동 ON
+- `IGNITION_OFF`: 시동 OFF
+- `STOP`: 정차 (duration_min 포함)
+- `OVERSPEED`: 과속
+- `HARD_BRAKE`: 급감속
+- `IDLE`: 공회전
+
+---
+
+### 3.12 User (담당자 - Cognito 연동)
+
+> **참고**: 인증은 Cognito User Pool에서 관리합니다. `app_user` 테이블은 Cognito 사용자 ID와 조직 정보를 매핑합니다.
 
 ```sql
 CREATE TABLE app_user (
-    user_id            VARCHAR(36) PRIMARY KEY,
-    organization_id    VARCHAR(36) NOT NULL REFERENCES organization(organization_id),
-    user_type          VARCHAR(20) NOT NULL,              -- OWNER, STAFF, DRIVER
-    name               VARCHAR(50) NOT NULL,
-    email              VARCHAR(100) UNIQUE,
-    phone              VARCHAR(20) NOT NULL,
-    password_hash      VARCHAR(255),
-    role               VARCHAR(20),                       -- STAFF 권한 등급
-    scope_type         VARCHAR(30) DEFAULT 'ALL_GROUPS',  -- ALL_GROUPS, SELECTED_GROUPS
-    status             VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    push_enabled       BOOLEAN DEFAULT TRUE,
-    email_enabled      BOOLEAN DEFAULT FALSE,
-    last_login_at      TIMESTAMP WITH TIME ZONE,
-    created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at         TIMESTAMP WITH TIME ZONE
+    user_id             VARCHAR(36) PRIMARY KEY,
+    organization_id      VARCHAR(36) NOT NULL REFERENCES organization(organization_id),
+    cognito_user_id     VARCHAR(255),                       -- Cognito 사용자 ID (sub)
+    name                VARCHAR(100) NOT NULL,
+    email               VARCHAR(100) NOT NULL,
+    phone               VARCHAR(20),
+    role                VARCHAR(20) NOT NULL DEFAULT 'STAFF',  -- OWNER, STAFF
+    scope_type          VARCHAR(20) DEFAULT 'ALL_GROUPS',      -- ALL_GROUPS, SELECTED_GROUPS
+    notification_channels VARCHAR(50) DEFAULT 'PUSH,EMAIL',
+    status              VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at          TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at          TIMESTAMP WITH TIME ZONE,
+    
+    CONSTRAINT chk_user_role CHECK (role IN ('OWNER', 'STAFF')),
+    CONSTRAINT chk_user_scope CHECK (scope_type IN ('ALL_GROUPS', 'SELECTED_GROUPS')),
+    CONSTRAINT chk_user_status CHECK (status IN ('ACTIVE', 'INACTIVE'))
 );
 
 CREATE INDEX idx_app_user_organization_id ON app_user(organization_id);
-CREATE INDEX idx_app_user_user_type ON app_user(user_type);
-CREATE INDEX idx_app_user_status ON app_user(status);
+CREATE INDEX idx_app_user_cognito_user_id ON app_user(cognito_user_id);
 CREATE INDEX idx_app_user_email ON app_user(email);
+CREATE INDEX idx_app_user_status ON app_user(status);
 ```
 
 | 컬럼 | 타입 | NULL | 설명 |
 |------|------|------|------|
 | user_id | VARCHAR(36) | NO | 사용자 UUID (PK) |
 | organization_id | VARCHAR(36) | NO | 소속 조직 FK |
-| user_type | VARCHAR(20) | NO | OWNER, STAFF, DRIVER |
-| name | VARCHAR(50) | NO | 이름 |
-| email | VARCHAR(100) | YES | 이메일 (UNIQUE) |
-| phone | VARCHAR(20) | NO | 연락처 |
-| password_hash | VARCHAR(255) | YES | 비밀번호 해시 |
-| role | VARCHAR(20) | YES | 권한 등급 (STAFF) |
-| scope_type | VARCHAR(30) | YES | ALL_GROUPS, SELECTED_GROUPS |
-| status | VARCHAR(20) | NO | ACTIVE, INACTIVE, LOCKED |
-| push_enabled | BOOLEAN | YES | 푸시 알림 수신 |
-| email_enabled | BOOLEAN | YES | 이메일 알림 수신 |
-| last_login_at | TIMESTAMPTZ | YES | 마지막 로그인 |
+| cognito_user_id | VARCHAR(255) | YES | Cognito sub 클레임 |
+| name | VARCHAR(100) | NO | 이름 |
+| email | VARCHAR(100) | NO | 이메일 |
+| phone | VARCHAR(20) | YES | 연락처 |
+| role | VARCHAR(20) | NO | OWNER, STAFF |
+| scope_type | VARCHAR(20) | YES | ALL_GROUPS, SELECTED_GROUPS |
+| notification_channels | VARCHAR(50) | YES | PUSH, EMAIL |
+| status | VARCHAR(20) | NO | ACTIVE, INACTIVE |
 | created_at | TIMESTAMPTZ | YES | 생성 시각 |
 | updated_at | TIMESTAMPTZ | YES | 수정 시각 |
 | deleted_at | TIMESTAMPTZ | YES | 삭제 시각 |
 
 ---
 
-### 3.11 User Group Access (사용자-그룹 접근 권한)
+### 3.12 User Group Access (사용자-그룹 접근 권한)
 
 ```sql
-CREATE TABLE user_group_access (
-    access_id          VARCHAR(36) PRIMARY KEY,
-    user_id            VARCHAR(36) NOT NULL REFERENCES app_user(user_id),
-    group_id           VARCHAR(36) NOT NULL REFERENCES team(group_id),
-    created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE app_user_group_scope (
+    scope_id          VARCHAR(36) PRIMARY KEY,
+    user_id           VARCHAR(36) NOT NULL REFERENCES app_user(user_id),
+    group_id          VARCHAR(36) NOT NULL REFERENCES team(group_id),
+    created_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT uk_user_group UNIQUE (user_id, group_id)
 );
 
-CREATE INDEX idx_uga_user_id ON user_group_access(user_id);
-CREATE INDEX idx_uga_group_id ON user_group_access(group_id);
+CREATE INDEX idx_scope_user_id ON app_user_group_scope(user_id);
+CREATE INDEX idx_scope_group_id ON app_user_group_scope(group_id);
 ```
 
 ---
 
-### 3.12 eTAS Transmission Target (eTAS 전송 대상)
+### 3.13 eTAS Transmission Target (eTAS 전송 대상)
 
 ```sql
 CREATE TABLE etas_transmission_target (
@@ -570,7 +661,7 @@ CREATE INDEX idx_etas_target_vehicle_id ON etas_transmission_target(vehicle_id);
 
 ---
 
-### 3.13 eTAS Transmission Log (eTAS 전송 로그)
+### 3.14 eTAS Transmission Log (eTAS 전송 로그)
 
 ```sql
 CREATE TABLE etas_transmission_log (
@@ -615,7 +706,7 @@ CREATE INDEX idx_etl_idempotency_key ON etas_transmission_log(idempotency_key);
 
 ---
 
-### 3.14 Outbound Transmission (외부 전송 로그)
+### 3.15 Outbound Transmission (외부 전송 로그)
 
 ```sql
 CREATE TABLE outbound_transmission (
@@ -712,6 +803,11 @@ CREATE TYPE transmission_status_enum AS ENUM ('PENDING', 'SENT', 'FAILED');
 ---
 
 ## 6. 변경 이력 (Changelog)
+
+- **v3.1 (2026-03-28):**
+  - app_user 테이블: Cognito 연동에 맞게 필드 정리 (password_hash 제거, cognito_user_id 추가)
+  - 섹션 번호 수정 (trip_event, user_group_access 번호 중복 해결)
+  - team 테이블 이름 "Group" → "Team" 통일
 
 - **v3.0 (2026-03-27):**
   - Aurora PostgreSQL (Serverless v2) 복원 및 문서화
