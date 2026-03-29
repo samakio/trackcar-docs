@@ -931,16 +931,6 @@ components:
     options: {values: [ACTIVE, INACTIVE]}
     data_binding: form.status
     description: 그룹 상태
-  - id: field_is_default_group
-    type: checkbox
-    label: 기본 그룹
-    required: false
-    readonly: false
-    visible: true
-    enabled: true
-    options: {single_default_per_owner: true}
-    data_binding: form.is_default_group
-    description: owner별 기본 그룹 지정
   - id: button_save_group
     type: button
     label: 그룹 저장
@@ -977,9 +967,6 @@ states:
   empty: 등록된 그룹이 없습니다.
   error: 그룹 정보를 불러오지 못했습니다.
   no_permission: 그룹 관리 권한이 없습니다.
-  conditional:
-    - condition: form.is_default_group == true
-      result: 같은 owner의 기존 기본 그룹은 자동 해제 예정 안내를 표시한다.
 validation:
   owner_id:
     rules: [필수 선택]
@@ -996,9 +983,7 @@ permissions:
   create: [Installer, Operator, Admin]
   update: [Operator, Admin]
   delete: []
-  field_control:
-    - field: is_default_group
-      editable_roles: [Operator, Admin]
+  field_control: []
 api:
   - method: GET
     endpoint: /api/admin/groups
@@ -1010,14 +995,14 @@ api:
     endpoint: /api/admin/groups
     purpose: 그룹 생성
     request:
-      body: {owner_id: string, group_name: string, status: string, is_default_group: boolean}
+      body: {owner_id: string, group_name: string, status: string}
     response: {group_id: string}
   - method: PUT
     endpoint: /api/admin/groups/{groupId}
     purpose: 그룹 수정
     request:
       path: {groupId: string}
-      body: {group_name: string, status: string, is_default_group: boolean}
+      body: {group_name: string, status: string}
     response: {group_id: string}
 navigation_rules:
   entry_points:

@@ -655,7 +655,6 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
         "vehicle_count": 20,
         "driver_count": 25,
         "status": "ACTIVE",
-        "is_default_group": true,
         "created_at": "2026-03-01T09:00:00Z"
       }
     ],
@@ -677,8 +676,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 {
   "owner_id": "own_001",
   "group_name": "부산지점",
-  "status": "ACTIVE",
-  "is_default_group": false
+  "status": "ACTIVE"
 }
 ```
 
@@ -705,7 +703,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 **수정 불가 필드 (읽기 전용):** `organization_id` — 소속 고객사 변경 불가
 
 **주의사항:**
-- `is_default_group`은 요청 body에 포함되어 있으나 **백엔드에서 무시됨** → UI에서 노출하지 말 것
+- `is_default_group` 개념은 현재 백엔드에서 사용하지 않습니다. 고객사 목록의 `default_group_name`은 저장된 플래그가 아니라 가장 먼저 생성된 그룹명을 보여주는 수준입니다.
 
 **Request Body:**
 ```json
