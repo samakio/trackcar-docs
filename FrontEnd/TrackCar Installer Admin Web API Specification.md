@@ -316,11 +316,18 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 **Endpoint:** `POST /api/admin/owners`
 
-**목적:** 신규 Owner 계정 생성
+**목적:** 신규 고객사 등록 (그룹/OWNER앱계정/기사 자동 생성 포함)
 
 **권한:** Installer, Operator, Admin
 
-> 고객사 등록은 조직 정보와 기본 그룹만 생성합니다. OWNER 앱 계정 생성/초대는 고객사 상세의 별도 API(`GET/POST/PATCH/DELETE /api/admin/owners/{ownerId}/account`)에서 관리합니다.
+**자동 생성 항목:**
+| owner_type | 기본 그룹 | OWNER 앱 계정 | 기사 |
+|-----------|:---------:|:------------:|:----:|
+| PERSONAL | ✅ 자동 | ✅ 자동 | ✅ 자동 |
+| BUSINESS | ✅ 자동 | ✅ 자동 | ❌ |
+
+- OWNER 앱 계정은 DB만 생성 (Cognito 초대는 고객사 상세에서 별도 진행)
+- PERSONAL 기사: `driver_code = DRV-{ownerId앞8자리}`, 전화번호/이름은 고객사와 동일
 
 **Request Body:**
 ```json
@@ -331,7 +338,6 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "email": "test@test.co.kr",
   "business_no": "1234567890",
   "transport_biz_no": "운송12345",
-  "create_default_group": true,
   "default_group_name": "테스트운수 기본그룹"
 }
 ```
@@ -341,19 +347,32 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 | owner_type | string | Yes | PERSONAL, BUSINESS |
 | name_or_company_name | string | Yes | 이름 또는 회사명 (2~100자) |
 | phone | string | Yes | 휴대폰번호 (KR 형식) |
-| email | string | No | 이메일 |
-| business_no | string | Cond | 사업자번호 (owner_type=BUSINESS 시 필수) |
+| email | string | **Yes** | 이메일 (OWNER 앱 계정 생성에 필요) |
+| business_no | string | No | 사업자번호 |
 | transport_biz_no | string | No | 운송사업자등록번호 (eTAS 전송용) |
-| create_default_group | boolean | No | 기본 그룹 자동 생성 여부 (기본: true) |
-| default_group_name | string | No | 기본 그룹명 |
+| default_group_name | string | No | 기본 그룹명 (미입력 시 "{이름} 기본그룹") |
 
-**Response:**
+**Response (BUSINESS):**
 ```json
 {
   "success": true,
   "data": {
     "owner_id": "own_001",
-    "default_group_id": "grp_001"
+    "default_group_id": "grp_001",
+    "owner_account_id": "usr_001"
+  }
+}
+```
+
+**Response (PERSONAL):**
+```json
+{
+  "success": true,
+  "data": {
+    "owner_id": "own_001",
+    "default_group_id": "grp_001",
+    "owner_account_id": "usr_001",
+    "driver_id": "drv_001"
   }
 }
 ```
