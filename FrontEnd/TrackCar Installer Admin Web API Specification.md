@@ -458,6 +458,134 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
+### 3.7 고객사 앱 계정 조회
+
+**Endpoint:** `GET /api/admin/owners/{ownerId}/account`
+
+**목적:** 해당 고객사의 OWNER 앱 계정 조회
+
+**권한:** Installer, Operator, Admin
+
+**Response (계정 있음):**
+```json
+{
+  "success": true,
+  "data": {
+    "account": {
+      "user_id": "usr_001",
+      "name": "홍길동",
+      "email": "hong@test.com",
+      "phone": "01012345678",
+      "role": "OWNER",
+      "status": "ACTIVE",
+      "app_activation_status": "LIVE",
+      "created_at": "2026-03-01T09:00:00Z"
+    }
+  }
+}
+```
+
+**Response (계정 없음):**
+```json
+{
+  "success": true,
+  "data": {
+    "account": null
+  }
+}
+```
+
+### 3.8 고객사 앱 계정 생성
+
+**Endpoint:** `POST /api/admin/owners/{ownerId}/account`
+
+**목적:** 고객사 OWNER 앱 계정 생성 및 초대
+
+**권한:** Operator, Admin
+
+**주의사항:**
+- 이미 OWNER 계정이 존재하면 409 오류
+- `invite_now = true`면 이메일로 초대 발송 + Cognito 계정 생성
+- `invite_now = false`면 DB만 생성 (나중에 초대 가능)
+
+**Request Body:**
+```json
+{
+  "name": "홍길동",
+  "email": "hong@test.com",
+  "phone": "01012345678",
+  "invite_now": true
+}
+```
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "usr_001",
+    "app_activation_status": "INVITED"
+  }
+}
+```
+
+**Response (이미 존재):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CONFLICT",
+    "message": "Owner account already exists"
+  }
+}
+```
+
+### 3.9 고객사 앱 계정 상태 변경
+
+**Endpoint:** `PATCH /api/admin/owners/{ownerId}/account/status`
+
+**목적:** OWNER 앱 계정 활성화/비활성화 (Cognito 연동)
+
+**권한:** Operator, Admin
+
+**주의사항:**
+- `INACTIVE` 처리 시 Cognito 계정도 자동 비활성화 (앱 로그인 불가)
+- `ACTIVE` 복구 시 Cognito 계정도 자동 재활성화
+
+**Request Body:**
+```json
+{
+  "status": "INACTIVE"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "usr_001",
+    "status": "INACTIVE"
+  }
+}
+```
+
+### 3.10 고객사 앱 계정 삭제
+
+**Endpoint:** `DELETE /api/admin/owners/{ownerId}/account`
+
+**목적:** OWNER 앱 계정 삭제 (soft delete + Cognito 비활성화)
+
+**권한:** Operator, Admin
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
 ---
 
 ## 4. Group API
