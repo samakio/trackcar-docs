@@ -924,11 +924,23 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
-### 6.4 차량 수정
+ ### 6.4 차량 수정
 
 **Endpoint:** `PUT /api/admin/vehicles/{vehicleId}`
 
 **목적:** 차량 정보 수정
+
+**권한:** Installer, Operator, Admin
+
+**수정 가능 필드:** `vehicle_no`, `vin`, `vehicle_type`, `group_id`
+
+**수정 불가 필드 (읽기 전용):**
+- `organization_id` — 소속 고객사 변경 불가
+- `vehicle_status`, `running_status`, `install_status` — 시스템이 자동 관리
+
+**주의사항:**
+- `vehicle_no`, `vin`은 UNIQUE 제약 — 중복 시 저장 실패 메시지로 안내 (별도 중복 체크 API 없음)
+- 값이 없는 필드는 기존 값 유지 (부분 업데이트)
 
 **Request Body:**
 ```json
@@ -937,6 +949,63 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "vin": "2HGBH41JXMN109187",
   "vehicle_type": "BUS",
   "group_id": "grp_002"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "vehicle_id": "veh_001"
+  }
+}
+```
+
+### 6.5 차량 삭제
+
+**Endpoint:** `DELETE /api/admin/vehicles/{vehicleId}`
+
+**목적:** 차량 삭제 (soft delete)
+
+**권한:** Operator, Admin
+
+**Path Parameters:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| vehicleId | string | Yes | 차량 ID |
+
+**비즈니스 조건:**
+- 차량에 ACTIVE 장치 바인딩이 존재하면 400 오류 반환 (장치 연결 해제 후 삭제 가능)
+- 차량에 ACTIVE 기사 배정이 존재하면 400 오류 반환 (기사 배정 해제 후 삭제 가능)
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+**Response (삭제 불가 - 장치 연결됨):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Cannot delete vehicle with active device binding"
+  }
+}
+```
+
+**Response (삭제 불가 - 기사 배정됨):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Cannot delete vehicle with active driver assignment"
+  }
 }
 ```
 
