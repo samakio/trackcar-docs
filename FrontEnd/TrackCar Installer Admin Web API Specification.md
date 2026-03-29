@@ -358,13 +358,21 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
-### 3.4 Owner 수정
+### 3.4 고객사 수정
 
 **Endpoint:** `PUT /api/admin/owners/{ownerId}`
 
-**목적:** Owner 정보 수정
+**목적:** 고객사 정보 수정
 
 **권한:** Operator, Admin
+
+**수정 가능 필드:** `name_or_company_name`, `phone`, `email`, `business_no`, `transport_biz_no`, `status`
+
+**수정 불가 필드 (읽기 전용):** `owner_type` — 생성 시 결정되며 이후 변경 불가
+
+**주의사항:**
+- `phone`, `business_no` 변경 시 중복 여부를 `POST /api/admin/owners/check-duplicate`로 먼저 확인 권장
+- `status` 변경은 이 API에 포함됨 (별도 상태 변경 API 없음)
 
 **Request Body:**
 ```json
@@ -531,12 +539,29 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 **권한:** Operator, Admin
 
+**수정 가능 필드:** `group_name`, `description`, `status`
+
+**수정 불가 필드 (읽기 전용):** `organization_id` — 소속 고객사 변경 불가
+
+**주의사항:**
+- `is_default_group`은 요청 body에 포함되어 있으나 **백엔드에서 무시됨** → UI에서 노출하지 말 것
+
 **Request Body:**
 ```json
 {
   "group_name": "수정그룹명",
-  "status": "ACTIVE",
-  "is_default_group": false
+  "description": "그룹 설명",
+  "status": "ACTIVE"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "group_id": "grp_001"
+  }
 }
 ```
 
@@ -705,6 +730,14 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 **권한:** Operator, Admin
 
+**수정 가능 필드:** `model_name`, `firmware_version`, `line_number`, `installation_status`, `install_note`
+
+**수정 불가 필드 (읽기 전용):** `serial_no`, `approval_no`, `product_serial_no`, `device_status`
+- `device_status`(운영 상태)는 시스템이 자동 관리하며 수정 불가
+- `serial_no`, `approval_no`, `product_serial_no`는 기기 식별자로 변경 불가
+
+**`installation_status` 허용값:** `INSTALLED`, `UNINSTALLED`, `PENDING`
+
 **Request Body:**
 ```json
 {
@@ -713,6 +746,16 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "line_number": "01011112222",
   "installation_status": "INSTALLED",
   "install_note": "차량에 설치 완료"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "device_id": "dev_001"
+  }
 }
 ```
 
@@ -998,6 +1041,16 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 **Endpoint:** `PUT /api/admin/drivers/{driverId}`
 
+**권한:** Installer, Operator, Admin
+
+**수정 가능 필드:** `driver_name`, `phone`, `driver_code`, `group_id`, `status`
+
+**수정 불가 필드 (읽기 전용):** `organization_id` — 소속 고객사 변경 불가
+
+**주의사항:**
+- `driver_code`는 고유값(UNIQUE 인덱스) — 중복 시 저장 오류 발생 (별도 중복 체크 API 없음, 저장 실패 메시지로 안내)
+- `group_id` 변경 시 기존 차량 배정은 자동 정리되지 않음 (배정 관계 유지)
+
 **Request Body:**
 ```json
 {
@@ -1006,6 +1059,16 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "driver_code": "DRV20260003",
   "group_id": "grp_002",
   "status": "ACTIVE"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "driver_id": "drv_001"
+  }
 }
 ```
 
@@ -1606,6 +1669,17 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 **Endpoint:** `PUT /api/admin/members/{memberId}`
 
+**권한:** Operator, Admin
+
+**수정 가능 필드:** `member_name`, `phone`, `email`, `group_id`, `role`
+
+**수정 불가 필드 (읽기 전용):** `organization_id`, `user_type`
+
+**주의사항:**
+- `status` 변경은 이 API가 아닌 **`PATCH /api/admin/members/{memberId}/status`** 사용 (Cognito 연동 포함)
+- `group_id` 변경 시 기존 그룹 접근권한이 **전부 삭제**되고 새 그룹 1개로 재설정됨 (다중 그룹 선택 불가)
+- `role`은 `STAFF` 고정 운영 권장 (`OWNER` 계정과 혼용 금지)
+
 **Request:**
 ```json
 {
@@ -1613,8 +1687,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "phone": "01011112222",
   "email": "lee@testlogistics.com",
   "group_id": "grp_002",
-  "role": "STAFF",
-  "status": "ACTIVE"
+  "role": "STAFF"
 }
 ```
 
@@ -1670,6 +1743,15 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 ### 12.8 회원 상태 변경
 
 **Endpoint:** `PATCH /api/admin/members/{memberId}/status`
+
+**권한:** Operator, Admin
+
+**주의사항:**
+- 회원 `status` 변경은 반드시 이 API를 사용 (`PUT /members/{memberId}`에 status 포함 불가)
+- `INACTIVE` 처리 시 Cognito 계정도 자동 비활성화됨 (앱 로그인 불가)
+- `ACTIVE` 복구 시 Cognito 계정도 자동 재활성화됨
+
+**허용값:** `ACTIVE`, `INACTIVE`
 
 **Request:**
 ```json
