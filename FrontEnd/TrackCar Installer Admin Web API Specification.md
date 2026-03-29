@@ -518,16 +518,30 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
-**Response (성공):**
+**Response (성공 — invite_now: false):**
 ```json
 {
   "success": true,
   "data": {
     "user_id": "usr_001",
-    "app_activation_status": "INVITED"
+    "app_activation_status": "NOT_INVITED"
   }
 }
 ```
+
+**Response (성공 — invite_now: true):**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "usr_001",
+    "app_activation_status": "INVITED",
+    "temporary_password": "aB3$mK9!xQ2z"
+  }
+}
+```
+
+> `temporary_password`: Cognito 계정 생성 시 자동 발급된 임시 패스워드. 앱 첫 로그인 시 강제 변경됨. 관리자가 이 값을 고객에게 직접 전달해야 함.
 
 **Response (이미 존재):**
 ```json
