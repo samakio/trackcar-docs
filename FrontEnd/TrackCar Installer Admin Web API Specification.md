@@ -259,6 +259,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
         "default_group_name": "기본그룹",
         "vehicle_count": 10,
         "driver_count": 15,
+        "unmapped_vehicle_count": 3,
         "app_activation_status": "ACTIVE",
         "created_at": "2026-03-01T09:00:00Z"
       }
@@ -300,6 +301,9 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
       "business_no": "1234567890",
       "transport_biz_no": "운송12345",
       "default_group_name": "기본그룹",
+      "vehicle_count": 10,
+      "driver_count": 15,
+      "unmapped_vehicle_count": 3,
       "status": "ACTIVE",
       "created_at": "2026-03-01T09:00:00Z",
       "updated_at": "2026-03-25T10:00:00Z"

@@ -782,6 +782,7 @@ public class OwnerSummaryDto {
     private String defaultGroupName;
     private Integer vehicleCount;
     private Integer driverCount;
+    private Integer unmappedVehicleCount; // device_binding 또는 driver_link가 없는 차량 수
     private String appActivationStatus;
     private String createdAt;
 }
