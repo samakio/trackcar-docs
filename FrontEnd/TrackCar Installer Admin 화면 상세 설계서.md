@@ -3047,7 +3047,7 @@ actions:
     target: button_save_user
     behavior: create_or_update_admin_user
     api_ref: POST /api/admin/system/users or PUT /api/admin/system/users/{userId}
-    success_result: 사용자 저장 후 목록 갱신
+    success_result: 사용자 저장 후 임시 비밀번호 표시 및 목록 갱신
     error_result: 사용자 저장 실패
 states:
   initial: Admin만 접근 가능
@@ -3094,7 +3094,15 @@ api:
     purpose: 시스템 사용자 생성
     request:
       body: {user_name: string, email: string, role: string, status: string}
-    response: {user_id: string}
+    response: {user_id: string, login_username: string, temporary_password: string, password_change_required: true, role: string, status: string}
+post_create_flow:
+  - 생성 성공 시 임시 비밀번호를 1회 표시한다.
+  - 운영자는 안전한 채널로 임시 비밀번호를 전달해야 한다.
+  - 사용자는 최초 로그인 시 비밀번호 변경을 완료해야 한다.
+login_onboarding:
+  - 임시 비밀번호 로그인 시 `NEW_PASSWORD_REQUIRED` 상태로 진입한다.
+  - 로그인 화면은 새 비밀번호 / 새 비밀번호 확인 입력 UI를 표시한다.
+  - 비밀번호 변경 완료 후 대시보드로 이동한다.
 navigation_rules:
   entry_points:
     - 메뉴 System > Users & Roles 클릭

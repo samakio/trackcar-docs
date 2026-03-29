@@ -1,7 +1,7 @@
 # TrackCar Installer Admin Web API Specification
 
 - 작성일: 2026-03-25
-- 버전: v1.0
+- 버전: v1.5
 - 상태: 초안
 
 ---
@@ -25,7 +25,7 @@
 #### API Gateway
 
 ```
-Base URL: https://z8d3iyqm8f.execute-api.ap-northeast-2.amazonaws.com/v1/admin
+Base URL: https://a1xpskzj48.execute-api.ap-northeast-2.amazonaws.com/v1/api/admin
 Region: ap-northeast-2 (서울)
 ```
 
@@ -40,10 +40,10 @@ Region: ap-northeast-2
 #### 환경 변수 (.env)
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://z8d3iyqm8f.execute-api.ap-northeast-2.amazonaws.com/v1/admin
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxx
-NEXT_PUBLIC_COGNITO_CLIENT_ID=xxxxxxxxxxxxx
-NEXT_PUBLIC_COGNITO_REGION=ap-northeast-2
+VITE_API_BASE_URL=https://a1xpskzj48.execute-api.ap-northeast-2.amazonaws.com/v1/api/admin
+VITE_COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxx
+VITE_COGNITO_CLIENT_ID=xxxxxxxxxxxxx
+VITE_COGNITO_REGION=ap-northeast-2
 ```
 
 ### 1.4 인증 플로우
@@ -57,7 +57,7 @@ NEXT_PUBLIC_COGNITO_REGION=ap-northeast-2
 
 ```http
 GET /api/admin/owners HTTP/1.1
-Host: z8d3iyqm8f.execute-api.ap-northeast-2.amazonaws.com
+Host: a1xpskzj48.execute-api.ap-northeast-2.amazonaws.com
 Authorization: Bearer eyJraWQiOiJ...
 Content-Type: application/json
 ```
@@ -73,13 +73,27 @@ const response = await fetch(`https://trackcar.auth.ap-northeast-2.amazoncognito
   },
   body: new URLSearchParams({
     grant_type: 'refresh_token',
-    client_id: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
+    client_id: import.meta.env.VITE_COGNITO_CLIENT_ID,
     refresh_token: localStorage.getItem('refreshToken'),
   }),
 });
 ```
 
-### 1.3 공통 응답 형식
+#### 최초 로그인 비밀번호 변경
+
+- system user를 임시 비밀번호로 처음 로그인하면 Cognito가 `NEW_PASSWORD_REQUIRED`를 반환한다.
+- 프론트는 새 비밀번호 입력 UI를 표시하고 `completeNewPasswordChallenge`를 수행한다.
+- 변경 완료 후 정상 로그인 세션으로 전환된다.
+
+### 1.5 현재 구현 범위 주의사항
+
+- `members`는 owner에 소속된 하위 운영 계정 도메인이다.
+- `members`는 `installer-admin-web` 로그인 대상이 아니며, `mobile app` 로그인 대상이다.
+- `members`는 내부 운영 계정인 `system/users`와 다른 리소스이며, 운전자 계정인 `drivers`와도 구분된다.
+- `members`의 앱 초대/활성화는 `App Activation API` 흐름과 연결된다.
+- `group` 범위 연결은 현재 운영 스키마의 `user_group_access`를 전제로 한다.
+
+### 1.6 공통 응답 형식
 
 모든 API 응답은 다음 공통 형식을 따른다:
 
@@ -176,7 +190,13 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
         "VEHICLE_ONLY": 10,
         "DRIVER_ONLY": 5,
         "UNMAPPED": 5
-      }
+      },
+      "activation_funnel": [
+        {"step": "장치 등록", "count": 150, "percent": 100},
+        {"step": "차량 매핑", "count": 130, "percent": 87},
+        {"step": "기사 지정", "count": 118, "percent": 79},
+        {"step": "서비스 활성화", "count": 102, "percent": 68}
+      ]
     },
     "lists": {
       "recent_issue_vehicles": [
@@ -230,7 +250,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "data": {
     "items": [
       {
-        "owner_id": "own_001",
+        "owner_id": "7797a28f-c78c-43c8-8bbe-4d69cbdf8b2a",
         "owner_type": "BUSINESS",
         "name_or_company_name": "테스트운수",
         "phone": "01012345678",
@@ -1050,6 +1070,40 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
+### 9.3 차량-DTG 매핑 해제
+
+**Endpoint:** `DELETE /api/admin/mappings/device-vehicle/{mappingId}`
+
+**목적:** 활성 상태의 차량-DTG 매핑 해제
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "mapping_id": "map_dv_001",
+    "deleted": true
+  }
+}
+```
+
+### 9.4 차량-기사 매핑 해제
+
+**Endpoint:** `DELETE /api/admin/mappings/vehicle-driver/{mappingId}`
+
+**목적:** 활성 상태의 차량-기사 매핑 해제
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "mapping_id": "map_vd_001",
+    "deleted": true
+  }
+}
+```
+
 ---
 
 ## 10. Verification API
@@ -1290,13 +1344,239 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 ---
 
-## 12. System API
+## 12. Members API
 
-### 12.1 시스템 사용자 목록 조회
+### 12.1 개념 정의
+
+`member`는 owner에 소속된 하위 운영 계정이다.
+
+- 회사 owner가 담당자/중간 관리자를 추가해 소속 차량/기사/DTG를 관리하거나 모니터링할 수 있도록 하는 계정
+- `installer-admin-web` 로그인 대상 아님
+- `mobile app` 로그인 대상
+- 내부 운영 계정인 `system user`와 분리
+- 실제 운전자 계정인 `driver`와 분리
+
+### 12.2 회원 목록 조회
+
+**Endpoint:** `GET /api/admin/members`
+
+**권한:** Installer, Operator, Admin
+
+**Query Params:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| keyword | string | No | 이름, 휴대폰번호 검색 |
+| owner_id | string | No | owner 기준 필터 |
+| group_id | string | No | group 기준 필터 |
+| role | string | No | 역할 필터 |
+| app_activation_status | string | No | 앱 활성화 상태 필터 |
+| status | string | No | 계정 상태 필터 |
+| page | number | No | 페이지 번호 |
+| size | number | No | 페이지 크기 |
+| sort | string | No | 정렬 |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "member_id": "mem_001",
+        "member_name": "이운영",
+        "phone": "01011112222",
+        "email": "lee@testlogistics.com",
+        "owner_id": "7797a28f-c78c-43c8-8bbe-4d69cbdf8b2a",
+        "owner_name": "테스트운수(주)",
+        "group_id": "grp_001",
+        "group_name": "서울 본부",
+        "role": "STAFF",
+        "app_activation_status": "INVITED",
+        "status": "ACTIVE",
+        "created_at": "2026-03-01T09:00:00Z"
+      }
+    ],
+    "page_info": {
+      "page": 1,
+      "size": 20,
+      "total": 1,
+      "has_next": false
+    }
+  }
+}
+```
+
+### 12.3 회원 상세 조회
+
+**Endpoint:** `GET /api/admin/members/{memberId}`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "member": {
+      "member_id": "mem_001",
+      "member_name": "이운영",
+      "phone": "01011112222",
+      "email": "lee@testlogistics.com",
+      "owner_id": "own_001",
+      "owner_name": "테스트운수(주)",
+      "group_id": "grp_001",
+      "group_name": "서울 본부",
+      "role": "STAFF",
+      "app_activation_status": "INVITED",
+      "status": "ACTIVE",
+      "created_at": "2026-03-01T09:00:00Z"
+    }
+  }
+}
+```
+
+### 12.4 회원 등록
+
+**Endpoint:** `POST /api/admin/members`
+
+**Request:**
+```json
+{
+  "member_name": "이운영",
+  "phone": "01011112222",
+  "email": "lee@testlogistics.com",
+  "owner_id": "own_001",
+  "group_id": "grp_001",
+  "role": "STAFF",
+  "invite_now": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "member_id": "mem_001",
+    "user_id": "mem_001",
+    "app_activation_status": "INVITED"
+  }
+}
+```
+
+### 12.5 회원 수정
+
+**Endpoint:** `PUT /api/admin/members/{memberId}`
+
+**Request:**
+```json
+{
+  "member_name": "이운영",
+  "phone": "01011112222",
+  "email": "lee@testlogistics.com",
+  "group_id": "grp_002",
+  "role": "STAFF",
+  "status": "ACTIVE"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "member_id": "mem_001"
+  }
+}
+```
+
+### 12.6 회원 초대 발송
+
+**Endpoint:** `POST /api/admin/members/{memberId}/invite`
+
+**Request:**
+```json
+{
+  "method": "EMAIL"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "member_id": "mem_001",
+    "app_activation_status": "INVITED",
+    "invited_at": "2026-03-28T10:00:00Z"
+  }
+}
+```
+
+### 12.7 회원 초대 재발송
+
+**Endpoint:** `POST /api/admin/members/{memberId}/resend-invite`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "member_id": "mem_001",
+    "app_activation_status": "INVITED",
+    "invited_at": "2026-03-28T10:30:00Z"
+  }
+}
+```
+
+### 12.8 회원 상태 변경
+
+**Endpoint:** `PATCH /api/admin/members/{memberId}/status`
+
+**Request:**
+```json
+{
+  "status": "INACTIVE"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "member_id": "mem_001",
+    "status": "INACTIVE"
+  }
+}
+```
+
+### 12.9 업무 규칙
+
+- member는 반드시 하나의 owner에 속해야 한다.
+- member는 최소 1개 group에 속해야 한다.
+- 개인 owner는 member 없이 운영 가능하다.
+- 회사 owner는 여러 member를 둘 수 있다.
+- member는 자신에게 허용된 owner/group 범위 안에서만 차량, 기사, DTG를 조회할 수 있다.
+
+### 12.10 현재 1차 구현 메모
+
+- 1차 구현은 `app_user` + `user_group_access` 기준으로 member 계정을 관리한다.
+- 저장 시 `user_type = STAFF`, `role = STAFF`를 사용한다.
+- `app_activation_status`는 전용 저장 컬럼이 아니라 현재 기준으로 다음과 같이 계산한다.
+  - `last_login_at IS NOT NULL` → `LIVE`
+  - 그 외 → `NOT_INVITED`
+- member 세부 역할 체계는 후속 스키마 확장 전까지 `STAFF` 단일값으로 운영한다.
+
+---
+
+## 13. System API
+
+### 13.1 시스템 사용자 목록 조회
 
 **Endpoint:** `GET /api/admin/system/users`
 
 **목적:** Installer Admin 내부 사용자 목록 조회
+
+**현재 구현 메모:** 시스템 사용자의 source of truth는 실제 DB가 아니라 Cognito User Pool이다. 목록은 Cognito 사용자와 Cognito group 기준으로 구성된다.
 
 **권한:** Admin
 
@@ -1331,7 +1611,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
-### 12.2 시스템 사용자 생성
+### 13.2 시스템 사용자 생성
 
 **Endpoint:** `POST /api/admin/system/users`
 
@@ -1347,21 +1627,37 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
+**동작 방식:**
+- Cognito `AdminCreateUser` 기반으로 계정을 생성한다.
+- 무작위 임시 비밀번호를 발급한다.
+- 첫 로그인 시 `NEW_PASSWORD_REQUIRED` 챌린지를 통해 비밀번호 변경이 강제된다.
+
 **Response:**
 ```json
 {
   "success": true,
   "data": {
-    "user_id": "sys_002"
+    "user_id": "6408bd9c-3051-70e1-7054-0477eb79bd1e",
+    "login_username": "newadmin@trackcar.co.kr",
+    "temporary_password": "Cy$5dbegHLYX",
+    "password_change_required": true,
+    "role": "Operator",
+    "status": "ACTIVE"
   }
 }
 ```
 
+### 13.3 시스템 사용자 최초 로그인
+
+- 임시 비밀번호로 로그인하면 Cognito가 `NEW_PASSWORD_REQUIRED`를 반환한다.
+- 프론트는 새 비밀번호 입력 UI를 표시하고 `completeNewPasswordChallenge`를 수행한다.
+- 비밀번호 변경이 완료되면 정상 로그인 세션으로 전환된다.
+
 ---
 
-## 13. 공통 타입 정의
+## 14. 공통 타입 정의
 
-### 13.1 Status Enum Values
+### 14.1 Status Enum Values
 
 |Enum|값|
 |---|---|
@@ -1380,7 +1676,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 | **invite_method** | SMS_LINK, TEMP_PASSWORD, LATER |
 | **driver_account_status** | YES, NO |
 
-### 13.2 Page Info
+### 14.2 Page Info
 
 ```json
 {
@@ -1393,7 +1689,32 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 ---
 
-## 14. 변경 이력 (Changelog)
+## 15. 변경 이력 (Changelog)
+
+- **v1.5 (2026-03-29):**
+  - 실제 Admin API Gateway base URL을 `a1xpskzj48 ... /v1/api/admin` 기준으로 수정
+  - Vite 환경변수명(`VITE_*`) 기준으로 문서화
+  - system user 최초 로그인 `NEW_PASSWORD_REQUIRED` 흐름 추가
+  - owner 예시의 `owner_id`를 실제 UUID 형식으로 보정
+
+- **v1.4 (2026-03-29):**
+  - System Users를 Cognito 기반 source of truth로 명시
+  - 시스템 사용자 생성 응답에 `login_username`, `temporary_password`, `password_change_required` 추가
+  - 최초 로그인 `NEW_PASSWORD_REQUIRED` 흐름 문서화
+  - Members 1차 구현 메모에서 `cognito_user_id` 의존 설명 제거
+
+- **v1.3 (2026-03-28):**
+  - Members API를 정식 계약으로 추가
+  - `members`를 owner 하위 운영 계정 도메인으로 정의
+  - `members`와 `system users`, `drivers`, `app activations`의 역할 분리 반영
+
+- **v1.2 (2026-03-28):**
+  - `/members` 화면은 현재 프론트 프로토타입이며 정식 백엔드 계약 범위가 아님을 명시
+  - 현재 구현 기준의 API 지원 범위 주의사항 추가
+
+- **v1.1 (2026-03-28):**
+  - Mapping API에 매핑 해제 엔드포인트 2종 추가
+  - 백엔드 AdminHandler 반영 범위에 맞춰 스펙 보강
 
 - **v1.0 (2026-03-25):**
   - 최초 API Spec 문서 작성
@@ -1402,7 +1723,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 ---
 
-## 15. 참고 문서
+## 16. 참고 문서
 
 | 문서명 | 설명 |
 |--------|------|

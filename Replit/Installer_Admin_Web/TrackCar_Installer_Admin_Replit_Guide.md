@@ -43,11 +43,11 @@ Cognito Domain: https://trackcar-dev-auth.auth.ap-northeast-2.amazoncognito.com
 ### 3.3 환경 변수 (.env.local)
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://a1xpskzj48.execute-api.ap-northeast-2.amazonaws.com/prod/v1/api/admin
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=ap-northeast-2_PC62e06zs
-NEXT_PUBLIC_COGNITO_CLIENT_ID=3actavsaep6haji08qrga3otov
-NEXT_PUBLIC_COGNITO_REGION=ap-northeast-2
-NEXT_PUBLIC_COGNITO_DOMAIN=https://trackcar-dev-auth.auth.ap-northeast-2.amazoncognito.com
+VITE_API_BASE_URL=https://a1xpskzj48.execute-api.ap-northeast-2.amazonaws.com/v1/api/admin
+VITE_COGNITO_USER_POOL_ID=ap-northeast-2_PC62e06zs
+VITE_COGNITO_CLIENT_ID=3actavsaep6haji08qrga3otov
+VITE_COGNITO_REGION=ap-northeast-2
+VITE_COGNITO_DOMAIN=https://trackcar-dev-auth.auth.ap-northeast-2.amazoncognito.com
 ```
 
 ---
@@ -181,7 +181,7 @@ NEXT_PUBLIC_COGNITO_DOMAIN=https://trackcar-dev-auth.auth.ap-northeast-2.amazonc
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {

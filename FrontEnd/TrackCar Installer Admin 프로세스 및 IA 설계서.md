@@ -219,6 +219,7 @@ Backend의 eTAS 전송 파이프라인은 Admin Web에서 관리하는 기준정
 #### 6) Member/Driver 계정 준비
 
 - 앱 로그인 주체가 필요한 경우 member/driver 계정을 준비한다.
+- member는 모바일 앱 사용 대상이며 Installer Admin Web 로그인 대상은 아니다.
 - 드라이버 엔터티와 계정은 분리 가능하지만 링크 구조를 갖는다.
 
 #### 7) DTG-차량 매핑
@@ -245,6 +246,7 @@ Backend의 eTAS 전송 파이프라인은 Admin Web에서 관리하는 기준정
 #### 12) 앱 초대 발송
 
 - owner/member/driver 대상 앱 초대 링크 또는 임시 인증정보를 발송한다.
+- 현재 운영 기준의 member phase-1 상태 해석은 `NOT_INVITED` 또는 `LIVE` 중심으로 본다.
 
 #### 13) 모바일 앱 최초 로그인 확인
 
@@ -755,7 +757,8 @@ Installer Admin Web
 #### Member Accounts
 
 - 회사 관리자, 차량 담당자, 배차 담당자 등 운영용 사용자 계정을 관리한다.
-- Owner 소속 지정, Group 소속 지정, 역할 지정, 앱 또는 웹 사용 권한 지정
+- Owner 소속 지정, Group 소속 지정, 역할 지정, 모바일 앱 사용 권한 지정
+- Installer Admin Web 로그인 대상은 아니다.
 
 #### Driver Accounts
 
@@ -876,11 +879,11 @@ MVP UI는 단순하게 유지하되, 데이터 구조는 복수 차량 / 복수 
 
 #### 상태 정의
 
-- INVITATION_PENDING
+- NOT_READY
 - INVITED
 - FIRST_LOGIN_DONE
-- ACTIVATED
-- ACTIVATION_FAILED
+- LIVE
+- LOCKED
 
 ---
 

@@ -1,7 +1,7 @@
 # TrackCar Lambda 구현 설계서 (Java)
 
 - 작성일: 2026-03-28
-- 버전: v3.2
+- 버전: v3.3
 - 상태: 초안
 - 기반: TrackCar 플랫폼 아키텍처 상세 설계 v3.0.1
 - **구현 언어: Java 25 + AWS Lambda RequestHandler 패턴**
@@ -125,7 +125,8 @@ aws-functions/
 │   │   └── ApiAdapterHandler.java                # API Gateway 트리거
 │   ├── common/                                   # 공통
 │   │   ├── context/
-│   │   │   └── MobileRequestContext.java        # Mobile API 요청 context
+│   │   │   ├── MobileRequestContext.java        # Mobile API 요청 context
+│   │   │   └── AdminRequestContext.java         # Admin API 요청 context
 │   │   ├── model/
 │   │   │   ├── TelemetryPayload.java
 │   │   │   ├── CleanStreamRecord.java
@@ -146,7 +147,8 @@ aws-functions/
 │   │       └── JsonUtils.java
 │   ├── api/                                      # REST API
 │   │   └── handlers/
-│   │       └── MobileHandler.java                 # Mobile API Handler
+│   │       ├── AdminHandler.java                # Installer Admin API Handler
+│   │       └── MobileHandler.java               # Mobile API Handler
 ├── src/main/resources/
 │   └── logback.xml
 └── src/test/java/
@@ -282,6 +284,51 @@ public class FormatterHandler implements RequestHandler<SQSEvent, String> {
     }
 }
 ```
+
+### 3.3 API Gateway Admin Handler 패턴
+
+`api-adapter-client` Lambda는 API Gateway 요청을 받아 경로 기준으로 Admin API와 Mobile API로 위임합니다.
+
+```java
+// ApiAdapterHandler.java
+public class ApiAdapterHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+
+    private final AdminHandler adminHandler;
+    private final MobileHandler mobileHandler;
+
+    @Override
+    public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent event, Context context) {
+        String path = event.getPath();
+        String method = event.getHttpMethod();
+        Map<String, String> queryParams = event.getQueryStringParameters();
+        Map<String, Object> body = parseBody(event.getBody());
+        String normalizedPath = normalizePath(path);
+
+        if (normalizedPath.startsWith("/api/admin/") || normalizedPath.startsWith("/v1/admin/")) {
+            String authHeader = event.getHeaders().get("Authorization");
+            return adminHandler.handleRequest(path, method, queryParams, body, authHeader, objectMapper, requestId);
+        }
+
+        if (normalizedPath.startsWith("/v1/mobile/") || normalizedPath.startsWith("/mobile/")) {
+            String authHeader = event.getHeaders().get("Authorization");
+            return mobileHandler.handleRequest(path, method, queryParams, body, authHeader, objectMapper);
+        }
+
+        return notFound(objectMapper, requestId);
+    }
+}
+```
+
+`AdminHandler`의 공통 흐름은 다음과 같습니다.
+
+1. `Authorization` 헤더에서 Bearer 토큰 추출
+2. `CognitoAuthValidator.validateToken(...)` 호출
+3. JWT claims를 `AdminRequestContext`로 변환
+4. HTTP Method별 분기 (`GET`, `POST`, `PUT`, `DELETE`)
+5. 엔드포인트별 private 메서드 호출
+6. 공통 JSON 응답과 `X-Request-Id` 헤더 반환
+
+이 구조로 Admin API의 인증, 권한 검사, 경로 분기, 공통 응답 포맷을 `AdminHandler`에 일원화합니다.
 
 ---
 
@@ -484,6 +531,19 @@ public class AuroraRepository {
 }
 ```
 
+현재 `AuroraRepository`는 수집/eTAS 처리뿐 아니라 Admin API용 조회/생성/수정 책임도 함께 담당합니다.
+
+- Admin 목록/상세/수정 메서드: `findOwners`, `findGroups`, `findDevices`, `findVehicles`, `findDrivers`
+- Admin 부가 기능 메서드: `findAccountCandidates`, `findVerifications`, `findAppActivations`, `findSystemUsers`
+- 매핑/상태 변경 메서드: `createBundleMapping`, `deleteDeviceVehicleMapping`, `deleteVehicleDriverMapping`, `markAppActivationLive`
+- 공통 결과 래퍼: `AdminQueryResult`
+
+또한 Named parameter 기반 헬퍼 메서드가 추가되어, 신규 Admin API 구현에서도 SQL 가독성을 높일 수 있습니다.
+
+- `executeQueryNew(...)`
+- `executeUpdateNew(...)`
+- `executeCountNew(...)`
+
 ### 4.2 DynamoDbRepository
 
 ```java
@@ -644,6 +704,31 @@ public class MetricsLogger {
 }
 ```
 
+### 4.4 AdminRequestContext
+
+`AdminRequestContext`는 Admin API 요청 처리 시 JWT claims를 기반으로 생성되는 요청 컨텍스트입니다.
+
+```java
+@Data
+@Builder
+public class AdminRequestContext {
+    private final String userId;
+    private final String username;
+    private final String name;
+    private final String email;
+    private final String role;
+    private final List<String> groups;
+    private final String requestId;
+
+    public boolean isInstaller();
+    public boolean isOperator();
+    public boolean isAdmin();
+    public boolean isOperatorOrAdmin();
+}
+```
+
+이 컨텍스트는 `AdminHandler`에서 인증 성공 직후 생성되며, 엔드포인트별 권한 검사와 감사 추적용 `requestId` 전달에 사용됩니다.
+
 ---
 
 ## 5. Lambda 함수 매핑
@@ -657,6 +742,20 @@ public class MetricsLogger {
 | etas-transmitter | `TransmitterHandler` | java25 | SQS (etas-transmit) | eTAS API 전송 |
 | api-adapter-client | `ApiAdapterHandler` | java25 | API Gateway | REST API 요청 처리 |
 | purge-old-data | `PurgeOldDataHandler` | java25 | EventBridge (02:00 KST) | 3년 된 데이터 자동 삭제 |
+
+`api-adapter-client`는 단일 Lambda 진입점이지만, 내부에서는 다음과 같이 하위 핸들러로 위임합니다.
+
+- `ApiAdapterHandler -> AdminHandler`: Installer Admin Web용 Admin API 처리
+- `ApiAdapterHandler -> MobileHandler`: Mobile App용 Mobile API 처리
+
+Admin API는 `/api/admin/*`, `/v1/admin/*` 경로를 사용하며, 주요 기능은 다음 범위를 포함합니다.
+
+- Dashboard
+- Owners / Groups / Devices / Vehicles / Drivers / Members
+- Account linking / Quick Mapping
+- Verifications
+- App Activations
+- System Users
 
 ---
 
@@ -687,6 +786,12 @@ String cognitoUserPoolId = System.getenv("COGNITO_USER_POOL_ID");
 String cognitoClientId = System.getenv("COGNITO_CLIENT_ID");
 ```
 
+Admin API 구현에서도 위 환경변수를 동일하게 사용합니다.
+
+- `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`: Admin API JWT 검증
+- `AURORA_CLUSTER_ARN`, `AURORA_SECRET_ARN`, `AURORA_DATABASE`: Admin API 조회/수정 SQL 실행
+- `AWS_REGION`: Cognito JWKS 조회 및 Aurora/Data API 클라이언트 리전 설정
+
 ---
 
 ## 7. Cognito 연동
@@ -707,6 +812,8 @@ public class CognitoAuthValidator {
     }
 }
 ```
+
+`CognitoAuthValidator`는 현재 `AdminHandler`와 `MobileHandler` 양쪽에서 공통으로 사용합니다. Admin API에서는 검증 성공 후 claims를 `AdminRequestContext`로 변환해 역할 기반 권한 검사에 활용합니다.
 
 ### 7.2 CognitoUserManager (Cognito Admin API)
 
@@ -731,6 +838,25 @@ public class CognitoUserManager {
     public boolean resendInvitation(String email);
 }
 ```
+
+`CognitoUserManager`는 Admin API의 사용자 초대/관리 흐름에서 사용됩니다. 특히 앱 활성화 초대, 시스템 사용자 생성/초대 같은 관리 기능에서 Cognito Admin API 연동 지점으로 사용합니다.
+
+현재 `system/users`의 source of truth는 실제 DB가 아니라 Cognito User Pool이다.
+
+- `POST /api/admin/system/users`
+  - Cognito `AdminCreateUser` 기반으로 사용자 생성
+  - 임시 비밀번호 발급
+  - 응답에 `login_username`, `temporary_password`, `password_change_required=true` 포함
+- `GET /api/admin/system/users`
+  - Cognito 사용자와 Cognito group 기준으로 목록 구성
+- 최초 로그인
+  - 임시 비밀번호 로그인 시 `NEW_PASSWORD_REQUIRED`
+  - 프론트가 `completeNewPasswordChallenge`로 새 비밀번호 설정
+
+운영 전제:
+- User Pool group: `Admin`, `Operator`, `Installer`
+- 관리자 테스트 계정이 `Admin` group 소속일 것
+- Lambda 실행 역할에 Cognito Admin API 권한이 있을 것
 
 ---
 
@@ -781,6 +907,13 @@ long count = executeCountNew(
 
 ## 9. 변경 이력 (Changelog)
 
+- **v3.3 (2026-03-28):**
+  - `AdminHandler` 추가 (Installer Admin API 통합 처리)
+  - `AdminRequestContext` 추가 (Admin JWT claims 기반 요청 컨텍스트)
+  - `ApiAdapterHandler`가 Admin API와 Mobile API를 하위 핸들러로 위임하도록 정리
+  - `AuroraRepository`에 Admin API용 목록/상세/상태변경 메서드 추가
+  - 메인 Lambda 설계서에 Admin API 처리 구조 반영
+
 - **v3.2 (2026-03-28):**
   - RDS Data API Client Library 추가 (`software.amazon.rdsdata:rds-data-api-client-library-java:2.0.0`)
   - AuroraRepository에 Named parameter 헬퍼 메서드 추가
@@ -819,6 +952,7 @@ long count = executeCountNew(
 |--------|------|------|
 | TrackCar Aurora PostgreSQL 물리 스키마 명세서 | v3.1 | Aurora 테이블 정의 |
 | RDS Data API Client Library | 2.0.0 | Named parameter 바인딩 |
+| TrackCar AdminHandler 구현 설계 | - | Installer Admin API 상세 설계 |
 | TrackCar DynamoDB 물리 스키마 명세서 | v2.0 | DynamoDB 테이블 정의 |
 | TrackCar 플랫폼 아키텍처 상세 설계 | v3.0.1 | 전체 시스템 아키텍처 |
 | AWS Lambda Developer Guide | - | Lambda 기본 개념 |
