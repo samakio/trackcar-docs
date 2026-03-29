@@ -320,6 +320,8 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 **권한:** Installer, Operator, Admin
 
+> 고객사 등록은 조직 정보와 기본 그룹만 생성합니다. OWNER 앱 계정 생성/초대는 고객사 상세의 별도 API(`GET/POST/PATCH/DELETE /api/admin/owners/{ownerId}/account`)에서 관리합니다.
+
 **Request Body:**
 ```json
 {
@@ -330,8 +332,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "business_no": "1234567890",
   "transport_biz_no": "운송12345",
   "create_default_group": true,
-  "default_group_name": "테스트운수 기본그룹",
-  "invite_method": "SMS_LINK"
+  "default_group_name": "테스트운수 기본그룹"
 }
 ```
 
@@ -345,7 +346,6 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 | transport_biz_no | string | No | 운송사업자등록번호 (eTAS 전송용) |
 | create_default_group | boolean | No | 기본 그룹 자동 생성 여부 (기본: true) |
 | default_group_name | string | No | 기본 그룹명 |
-| invite_method | string | Yes | SMS_LINK, TEMP_PASSWORD, LATER |
 
 **Response:**
 ```json

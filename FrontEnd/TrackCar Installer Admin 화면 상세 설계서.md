@@ -704,16 +704,6 @@ components:
     options: {placeholder: 기본그룹, visible_when: form.create_default_group == true}
     data_binding: form.default_group_name
     description: 자동 생성 그룹명
-  - id: field_invite_method
-    type: radio_group
-    label: 앱 초대 방식
-    required: true
-    readonly: false
-    visible: true
-    enabled: true
-    options: {values: [SMS_LINK, TEMP_PASSWORD, LATER]}
-    data_binding: form.invite_method
-    description: 앱 초대 또는 추후 처리 선택
   - id: button_check_duplicate
     type: button
     label: 중복 확인
@@ -801,10 +791,6 @@ validation:
     rules: [기본 그룹 자동 생성 시 1자 이상 50자 이하]
     messages:
       length: 기본 그룹명은 1자 이상 50자 이하로 입력해 주세요.
-  invite_method:
-    rules: [필수 선택]
-    messages:
-      required: 앱 초대 방식을 선택해 주세요.
 permissions:
   view: [Installer, Operator, Admin]
   create: [Installer, Operator, Admin]
@@ -834,14 +820,13 @@ api:
         business_no: string
         create_default_group: boolean
         default_group_name: string
-        invite_method: string
     response: {owner_id: string, default_group_id: string}
   - method: PUT
     endpoint: /api/admin/owners/{ownerId}
     purpose: Owner 수정
     request:
       path: {ownerId: string}
-      body: {name_or_company_name: string, phone: string, email: string, business_no: string, invite_method: string}
+      body: {name_or_company_name: string, phone: string, email: string, business_no: string}
     response: {owner_id: string}
 navigation_rules:
   entry_points:
