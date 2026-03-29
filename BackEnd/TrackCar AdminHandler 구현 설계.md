@@ -571,6 +571,7 @@ public class AdminRequestContext {
 | POST | `/api/admin/owners` | `createOwner(...)` | `CreateOwnerRequest` | `CreateOwnerResponseData` | Installer, Operator, Admin |
 | PUT | `/api/admin/owners/{ownerId}` | `updateOwner(...)` | `UpdateOwnerRequest` | `UpdateOwnerResponseData` | Operator, Admin |
 | POST | `/api/admin/owners/check-duplicate` | `checkOwnerDuplicate(...)` | `OwnerDuplicateCheckRequest` | `DuplicateCheckResponseData` | Installer, Operator, Admin |
+| DELETE | `/api/admin/owners/{ownerId}` | `deleteOwner(...)` | - | - | Operator, Admin |
 
 ### 5.3 Group API
 
@@ -579,6 +580,7 @@ public class AdminRequestContext {
 | GET | `/api/admin/groups` | `listGroups(...)` | `GroupListQuery` | `GroupListResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/groups` | `createGroup(...)` | `CreateGroupRequest` | `CreateGroupResponseData` | Installer, Operator, Admin |
 | PUT | `/api/admin/groups/{groupId}` | `updateGroup(...)` | `UpdateGroupRequest` | `UpdateGroupResponseData` | Operator, Admin |
+| DELETE | `/api/admin/groups/{groupId}` | `deleteGroup(...)` | - | - | Operator, Admin |
 
 ### 5.4 Device API
 
@@ -589,6 +591,7 @@ public class AdminRequestContext {
 | POST | `/api/admin/devices` | `createDevice(...)` | `CreateDeviceRequest` | `CreateDeviceResponseData` | Installer, Operator, Admin |
 | PUT | `/api/admin/devices/{deviceId}` | `updateDevice(...)` | `UpdateDeviceRequest` | `UpdateDeviceResponseData` | Operator, Admin |
 | POST | `/api/admin/devices/check-duplicate` | `checkDeviceDuplicate(...)` | `DeviceDuplicateCheckRequest` | `DuplicateCheckResponseData` | Installer, Operator, Admin |
+| DELETE | `/api/admin/devices/{deviceId}` | `deleteDevice(...)` | - | - | Operator, Admin |
 
 ### 5.5 Vehicle API
 
@@ -607,6 +610,7 @@ public class AdminRequestContext {
 | GET | `/api/admin/drivers/{driverId}` | `getDriver(...)` | `DriverDetailPath` | `DriverDetailResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/drivers` | `createDriver(...)` | `CreateDriverRequest` | `CreateDriverResponseData` | Installer, Operator, Admin |
 | PUT | `/api/admin/drivers/{driverId}` | `updateDriver(...)` | `UpdateDriverRequest` | `UpdateDriverResponseData` | Installer, Operator, Admin |
+| DELETE | `/api/admin/drivers/{driverId}` | `deleteDriver(...)` | - | - | Operator, Admin |
 
 ### 5.7 Account Linking API
 
@@ -616,14 +620,25 @@ public class AdminRequestContext {
 | POST | `/api/admin/drivers/{driverId}/link-account` | `linkDriverAccount(...)` | `LinkDriverAccountRequest` | `LinkDriverAccountResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/drivers/{driverId}/create-linked-account` | `createLinkedAccount(...)` | `CreateLinkedAccountRequest` | `CreateLinkedAccountResponseData` | Installer, Operator, Admin |
 
-### 5.8 Mapping API
+### 5.8 Member API
+
+| Method | Path | Handler method | Request DTO | Response DTO | Role |
+|---|---|---|---|---|---|
+| GET | `/api/admin/members` | `listMembers(...)` | `MemberListQuery` | `MemberListResponseData` | Installer, Operator, Admin |
+| GET | `/api/admin/members/{memberId}` | `getMember(...)` | `MemberDetailPath` | `MemberDetailResponseData` | Installer, Operator, Admin |
+| POST | `/api/admin/members` | `createMember(...)` | `CreateMemberRequest` | `CreateMemberResponseData` | Installer, Operator, Admin |
+| PUT | `/api/admin/members/{memberId}` | `updateMember(...)` | `UpdateMemberRequest` | `UpdateMemberResponseData` | Operator, Admin |
+| PATCH | `/api/admin/members/{memberId}/status` | `patchMemberStatus(...)` | `PatchMemberStatusRequest` | `PatchMemberStatusResponseData` | Operator, Admin |
+| DELETE | `/api/admin/members/{memberId}` | `deleteMember(...)` | - | - | Operator, Admin |
+
+### 5.10 Mapping API
 
 | Method | Path | Handler method | Request DTO | Response DTO | Role |
 |---|---|---|---|---|---|
 | GET | `/api/admin/mappings/candidates` | `getMappingCandidates(...)` | `MappingCandidateQuery` | `MappingCandidateResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/mappings/bundle` | `createMappingBundle(...)` | `CreateMappingBundleRequest` | `CreateMappingBundleResponseData` | Installer, Operator, Admin |
 
-### 5.9 Verification API
+### 5.11 Verification API
 
 | Method | Path | Handler method | Request DTO | Response DTO | Role |
 |---|---|---|---|---|---|
@@ -631,7 +646,7 @@ public class AdminRequestContext {
 | GET | `/api/admin/verifications/{verificationId}` | `getVerification(...)` | `VerificationDetailPath` | `VerificationDetailResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/verifications/run` | `runVerifications(...)` | `RunVerificationsRequest` | `RunVerificationsResponseData` | Installer, Operator, Admin |
 
-### 5.10 App Activation API
+### 5.12 App Activation API
 
 | Method | Path | Handler method | Request DTO | Response DTO | Role |
 |---|---|---|---|---|---|
@@ -641,7 +656,7 @@ public class AdminRequestContext {
 | POST | `/api/admin/app-activations/{activationId}/resend-invite` | `resendAppActivationInvite(...)` | `ResendAppActivationInvitePath` | `InviteAppActivationResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/app-activations/{activationId}/mark-live` | `markAppActivationLive(...)` | `MarkAppActivationLivePath` | `MarkAppActivationLiveResponseData` | Installer, Operator, Admin |
 
-### 5.11 System API
+### 5.13 System API
 
 | Method | Path | Handler method | Request DTO | Response DTO | Role |
 |---|---|---|---|---|---|

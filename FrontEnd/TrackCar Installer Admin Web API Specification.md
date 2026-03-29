@@ -416,6 +416,40 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
+### 3.6 고객사 삭제
+
+**Endpoint:** `DELETE /api/admin/owners/{ownerId}`
+
+**목적:** 고객사 삭제 (soft delete)
+
+**권한:** Operator, Admin
+
+**Path Parameters:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| ownerId | string | Yes | 고객사 ID |
+
+**비즈니스 조건:** 소속 그룹, 차량, 기사, 회원 중 하나라도 존재하면 400 오류 반환
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+**Response (삭제 불가):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Cannot delete owner with groups, vehicles, drivers, or members"
+  }
+}
+```
+
 ---
 
 ## 4. Group API
@@ -503,6 +537,40 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "group_name": "수정그룹명",
   "status": "ACTIVE",
   "is_default_group": false
+}
+```
+
+### 4.4 그룹 삭제
+
+**Endpoint:** `DELETE /api/admin/groups/{groupId}`
+
+**목적:** 그룹 삭제 (soft delete)
+
+**권한:** Operator, Admin
+
+**Path Parameters:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| groupId | string | Yes | 그룹 ID |
+
+**비즈니스 조건:** 소속 차량, 기사, 회원 접근권한 중 하나라도 존재하면 400 오류 반환
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+**Response (삭제 불가):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Cannot delete group with vehicles, drivers, or member access"
+  }
 }
 ```
 
@@ -659,6 +727,40 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 {
   "serial_no": "DTG-002",
   "product_serial_no": "PROD-002"
+}
+```
+
+### 5.6 DTG 장치 삭제
+
+**Endpoint:** `DELETE /api/admin/devices/{deviceId}`
+
+**목적:** DTG 장치 삭제 (soft delete)
+
+**권한:** Operator, Admin
+
+**Path Parameters:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| deviceId | string | Yes | 장치 ID |
+
+**비즈니스 조건:** 차량에 ACTIVE로 연결된 바인딩이 존재하면 400 오류 반환 (바인딩 해제 후 삭제 가능)
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+**Response (삭제 불가):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Cannot delete device with active vehicle binding"
+  }
 }
 ```
 
@@ -904,6 +1006,40 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "driver_code": "DRV20260003",
   "group_id": "grp_002",
   "status": "ACTIVE"
+}
+```
+
+### 7.5 기사 삭제
+
+**Endpoint:** `DELETE /api/admin/drivers/{driverId}`
+
+**목적:** 기사 삭제 (soft delete)
+
+**권한:** Operator, Admin
+
+**Path Parameters:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| driverId | string | Yes | 기사 ID |
+
+**비즈니스 조건:** 활성 차량에 배정된 상태이면 400 오류 반환 (배정 해제 후 삭제 가능)
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+**Response (삭제 불가):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Cannot delete driver with active vehicle assignment"
+  }
 }
 ```
 
@@ -1553,7 +1689,30 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
-### 12.9 업무 규칙
+### 12.9 회원 삭제
+
+**Endpoint:** `DELETE /api/admin/members/{memberId}`
+
+**목적:** 회원 삭제 (soft delete + Cognito 비활성화)
+
+**권한:** Operator, Admin
+
+**Path Parameters:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| memberId | string | Yes | 회원 ID |
+
+**비즈니스 조건:** 차단 조건 없음. 삭제 시 그룹 접근권한 자동 제거 및 Cognito 계정 비활성화 처리
+
+**Response (성공):**
+```json
+{
+  "success": true,
+  "data": null
+}
+```
+
+### 12.10 업무 규칙
 
 - member는 반드시 하나의 owner에 속해야 한다.
 - member는 최소 1개 group에 속해야 한다.
@@ -1561,7 +1720,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 - 회사 owner는 여러 member를 둘 수 있다.
 - member는 자신에게 허용된 owner/group 범위 안에서만 차량, 기사, DTG를 조회할 수 있다.
 
-### 12.10 현재 1차 구현 메모
+### 12.11 현재 1차 구현 메모
 
 - 1차 구현은 `app_user` + `user_group_access` 기준으로 member 계정을 관리한다.
 - 저장 시 `user_type = STAFF`, `role = STAFF`를 사용한다.
