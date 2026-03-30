@@ -2699,9 +2699,10 @@ screen:
   service: Installer Admin Web
   domain: App Activation
   route: /app-activation
-  menu_path: App Activation
+  menu_path: App Activation (hidden)
   roles: [Installer, Operator, Admin]
   purpose: 앱 초대, 최초 로그인, 서비스 활성화 완료 여부를 관리한다.
+  status: deprecated_hidden_menu
 layout:
   type: list_detail_split
   platform: web-desktop

@@ -1685,6 +1685,8 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 ## 11. App Activation API
 
+> **상태:** deprecated 예정. 현재 backend API와 route는 유지되지만 installer-admin-web 사이드바 메뉴에서는 숨김 처리되어 있습니다. 기능은 고객사 상세 / 회원 관리 / 기사 계정 연결 화면으로 점진 이관 예정입니다.
+
 ### 11.1 앱 활성화 목록 조회
 
 **Endpoint:** `GET /api/admin/app-activations`

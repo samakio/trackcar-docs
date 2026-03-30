@@ -17,14 +17,14 @@
 - 대시보드, Owner/Member/Driver/Group 관리
 - DTG 기기 관리, 차량 관리, 기사 관리
 - 매핑 관리, Driver-Account Linking
-- App Activation, 연동 검증
+- App Activation(폐기 예정), 연동 검증
 
 ### 1.3 주요 보완사항
 
 - `owner / member / driver` 계정 모델 분리
 - `그룹(Group)`의 마스터를 Installer Admin 기준으로 정의
 - `설치 완료`와 `서비스 활성화 완료`를 별도 상태로 분리
-- `앱 초대 → 최초 로그인 → 앱 활성화 확인` 절차 추가
+- `앱 초대 → 최초 로그인 → 앱 활성화 확인` 절차 추가 (현재 독립 메뉴는 숨김, 각 도메인 화면으로 이관 예정)
 - 향후 `복수 기사 / 교대 운전 / 복수 모바일 단말` 확장을 고려한 흐름 반영
 
 ---
@@ -49,7 +49,7 @@
 - DTG/차량/기사 등록
 - DTG-차량-기사-계정 연결
 - 연동 검증
-- 앱 초대 및 활성화 상태 확인
+- 앱 초대 및 활성화 상태 확인(현재는 통합 화면보다 각 도메인 화면 중심으로 이관 중)
 
 #### 모바일 앱
 
@@ -134,7 +134,7 @@ DTG 단말 (MQTT/mTLS)
 ```
 
 **핵심 연동 포인트:**
-- DTG는 MQTT topic `trackcar/{deviceId}/telemetry`로 데이터 전송
+- DTG는 MQTT topic `dtg/{deviceId}/telemetry`로 데이터 전송
 - BatchSize 100 이상으로 배치 처리
 - Payload 검증 시 `ignition` 필드를 차량 상태 기준으로 사용
 - DynamoDB `ingest_dedup_guard`로 deviceId + batchId 멱등성 보장

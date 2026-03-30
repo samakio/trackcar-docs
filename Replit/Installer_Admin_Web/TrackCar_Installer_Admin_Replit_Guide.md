@@ -4,7 +4,7 @@
 
 **프로젝트명**: TrackCar Installer Admin Web
 **플랫폼**: Installer Admin (설치 관리자용 웹 대시보드)
-**목적**: DTG 단말기 설치, 차량/기사/오너 관리, 검증, 앱 활성화 관리
+**목적**: DTG 단말기 설치, 차량/기사/오너 관리, 검증, 계정 온보딩 관리
 
 ---
 
@@ -121,6 +121,8 @@ VITE_COGNITO_DOMAIN=https://trackcar-dev-auth.auth.ap-northeast-2.amazoncognito.
 | GET | `/app-activations/{activationId}` | 상세 |
 | POST | `/app-activations/{activationId}/invite` | 초대 발송 |
 | POST | `/app-activations/{activationId}/resend-invite` | 재발송 |
+
+> 참고: 현재 Installer Admin Web 사이드바 메뉴에서는 `앱 활성화`가 숨김 상태이며, route/API만 유지됩니다.
 
 ### 4.10 Account Linking
 | Method | Endpoint | 설명 |
