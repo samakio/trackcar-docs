@@ -2934,14 +2934,14 @@ screen:
   route: /system/users
   menu_path: System > Users & Roles
   roles: [Admin]
-  purpose: Installer Admin 내부 사용자와 역할을 관리한다.
+  purpose: Installer Admin 내부 사용자를 조회하고 Admin이 이름/역할 수정 및 활성/비활성 상태를 관리한다.
 layout:
   type: list_detail_split
   platform: web-desktop
   navigation:
     header: global_header
     sidebar: main_sidebar
-    tabs: [users, roles]
+  tabs: [users]
 data_scope:
   primary_entity: admin_user
   params: [keyword, role, status, page, size, sort]
@@ -2969,8 +2969,8 @@ components:
     visible: true
     enabled: true
     options:
-      columns: [user_id, user_name, email, role, status, last_login_at, created_at]
-      row_click_action: load_detail
+      columns: [user_name, email, role, status, last_login_at, created_at, actions]
+      row_click_action: none
     data_binding: admin_users.items
     description: 내부 관리자/설치기사 계정 목록
   - id: field_user_name
@@ -2987,12 +2987,12 @@ components:
     type: email_input
     label: 이메일
     required: true
-    readonly: false
+    readonly: true
     visible: true
-    enabled: true
+    enabled: false
     options: {max_length: 100}
     data_binding: user_detail.email
-    description: 로그인 이메일
+    description: 로그인 이메일 (수정 불가)
   - id: field_role
     type: select
     label: 역할
@@ -3013,6 +3013,16 @@ components:
     options: {values: [ACTIVE, INACTIVE, LOCKED]}
     data_binding: user_detail.status
     description: 계정 상태
+  - id: button_toggle_status
+    type: button
+    label: 활성/비활성 전환
+    required: false
+    readonly: false
+    visible: true
+    enabled: true
+    options: {variant: secondary}
+    data_binding: null
+    description: ACTIVE/INACTIVE 상태 전환
   - id: button_save_user
     type: button
     label: 저장
@@ -3030,21 +3040,21 @@ actions:
     api_ref: GET /api/admin/system/users
     success_result: 사용자 목록 표시
     error_result: 사용자 목록 조회 실패
-  - trigger: on_click_row
-    target: table_admin_users
-    behavior: fetch_admin_user_detail
-    api_ref: GET /api/admin/system/users/{userId}
-    success_result: 상세 표시
-    error_result: 상세 조회 실패
   - trigger: on_click_save_user
     target: button_save_user
     behavior: create_or_update_admin_user
     api_ref: POST /api/admin/system/users or PUT /api/admin/system/users/{userId}
     success_result: 사용자 저장 후 임시 비밀번호 표시 및 목록 갱신
     error_result: 사용자 저장 실패
+  - trigger: on_click_toggle_status
+    target: button_toggle_status
+    behavior: patch_admin_user_status
+    api_ref: PATCH /api/admin/system/users/{userId}/status
+    success_result: 상태 변경 후 목록 갱신
+    error_result: 상태 변경 실패
 states:
   initial: Admin만 접근 가능
-  normal: 목록/상세/역할 편집 가능
+  normal: 목록/수정 다이얼로그/상태 전환 가능
   loading: 목록/상세 로더 표시
   empty: 등록된 시스템 사용자가 없습니다.
   error: 시스템 사용자 정보를 불러오지 못했습니다.
@@ -3088,6 +3098,20 @@ api:
     request:
       body: {user_name: string, email: string, role: string, status: string}
     response: {user_id: string, login_username: string, temporary_password: string, password_change_required: true, role: string, status: string}
+  - method: PUT
+    endpoint: /api/admin/system/users/{userId}
+    purpose: 시스템 사용자 이름/역할 수정
+    request:
+      path: {userId: string}
+      body: {user_name: string, role: string}
+    response: {user_id: string, user_name: string, role: string}
+  - method: PATCH
+    endpoint: /api/admin/system/users/{userId}/status
+    purpose: 시스템 사용자 활성화/비활성화
+    request:
+      path: {userId: string}
+      body: {status: string}
+    response: {user_id: string, status: string}
 post_create_flow:
   - 생성 성공 시 임시 비밀번호를 1회 표시한다.
   - 운영자는 안전한 채널로 임시 비밀번호를 전달해야 한다.

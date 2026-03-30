@@ -2139,6 +2139,70 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
+**필수값:** `user_name`, `email`, `role`
+
+**중복 조건:** `email`은 Cognito username으로 사용되므로 유일해야 합니다. 중복 시 `USER_EXISTS` 오류가 반환됩니다.
+
+### 13.3 시스템 사용자 수정
+
+**Endpoint:** `PUT /api/admin/system/users/{userId}`
+
+**권한:** Admin
+
+**목적:** 시스템 사용자 이름과 역할 수정
+
+**주의사항:**
+- `email`은 로그인 아이디(Cognito username)로 사용되므로 수정하지 않습니다.
+- 수정 가능 항목은 `user_name`, `role`만입니다.
+
+**Request Body:**
+```json
+{
+  "user_name": "운영 관리자",
+  "role": "Admin"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "admin@trackcar.co.kr",
+    "user_name": "운영 관리자",
+    "role": "Admin"
+  }
+}
+```
+
+### 13.4 시스템 사용자 상태 변경
+
+**Endpoint:** `PATCH /api/admin/system/users/{userId}/status`
+
+**권한:** Admin
+
+**목적:** 시스템 사용자 활성화/비활성화
+
+**허용값:** `ACTIVE`, `INACTIVE`
+
+**Request Body:**
+```json
+{
+  "status": "INACTIVE"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "admin@trackcar.co.kr",
+    "status": "INACTIVE"
+  }
+}
+```
+
 **동작 방식:**
 - Cognito `AdminCreateUser` 기반으로 계정을 생성한다.
 - 무작위 임시 비밀번호를 발급한다.

@@ -131,6 +131,14 @@ VITE_COGNITO_DOMAIN=https://trackcar-dev-auth.auth.ap-northeast-2.amazoncognito.
 | POST | `/drivers/{driverId}/link-account` | 기존 계정 연결 |
 | POST | `/drivers/{driverId}/create-linked-account` | 새 계정 생성 및 연결 |
 
+### 4.11 System User
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/system/users` | 시스템 사용자 목록 |
+| POST | `/system/users` | 시스템 사용자 생성 |
+| PUT | `/system/users/{userId}` | 시스템 사용자 이름/역할 수정 |
+| PATCH | `/system/users/{userId}/status` | 시스템 사용자 활성화/비활성화 |
+
 ---
 
 ## 5. 공통 응답 형식

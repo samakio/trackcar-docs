@@ -663,6 +663,8 @@ public class AdminRequestContext {
 |---|---|---|---|---|---|
 | GET | `/api/admin/system/users` | `listSystemUsers(...)` | `SystemUserListQuery` | `SystemUserListResponseData` | Admin |
 | POST | `/api/admin/system/users` | `createSystemUser(...)` | `CreateSystemUserRequest` | `CreateSystemUserResponseData` | Admin |
+| PUT | `/api/admin/system/users/{userId}` | `updateSystemUser(...)` | `UpdateSystemUserRequest` | `UpdateSystemUserResponseData` | Admin |
+| PATCH | `/api/admin/system/users/{userId}/status` | `patchSystemUserStatus(...)` | `PatchSystemUserStatusRequest` | `PatchSystemUserStatusResponseData` | Admin |
 
 ---
 
