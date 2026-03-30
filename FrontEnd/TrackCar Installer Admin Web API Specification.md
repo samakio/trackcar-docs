@@ -1548,13 +1548,13 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 **Request Query Parameters:**
 | 파라미터 | 타입 | 필수 | 설명 |
 |----------|------|------|------|
-| keyword | string | No | 검색어 |
-| result_status | string[] | No | NOT_CHECKED, CHECKING, PASS, WARNING, FAIL |
-| severity | string[] | No | INFO, WARNING, CRITICAL |
-| owner_id | string | No | Owner ID |
+| keyword | string | No | 차량번호, 장치 S/N, 기사명 검색어 |
+| result_status | string[] | No | 현재 예약 필드 (미적용) |
+| severity | string[] | No | 현재 예약 필드 (미적용) |
+| owner_id | string | No | 현재 예약 필드 (미적용) |
 | page | number | No | 페이지 번호 |
 | size | number | No | 페이지당 건수 |
-| sort | string | No | 정렬 (기본: checked_at.desc) |
+| sort | string | No | 현재 `checked_at.desc` 고정 |
 
 **Response:**
 ```json
@@ -1568,9 +1568,15 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
         "vehicle_no": "12가3456",
         "device_serial_no": "DTG-001",
         "driver_name": "홍길동",
+        "target_id": "veh_001",
         "gps_received": true,
         "heartbeat_received": true,
-        "app_login_checked": true,
+        "device_registered": "PASS",
+        "vehicle_mapped": "PASS",
+        "driver_mapped": "PASS",
+        "gps_check": "PASS",
+        "heartbeat_check": "PASS",
+        "last_received_at": "2026-03-25T09:58:00Z",
         "result_status": "PASS",
         "severity": "INFO",
         "checked_at": "2026-03-25T10:00:00Z"
@@ -1581,7 +1587,37 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
-### 10.2 검증 상세 조회
+### 10.2 검증 대상 후보 검색
+
+**Endpoint:** `GET /api/admin/verifications/candidates`
+
+**목적:** 차량번호 / 장치 S/N / 기사명으로 검증 가능한 차량 자동완성 검색
+
+**Request Query Parameters:**
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| keyword | string | No | 차량번호, 장치 S/N, 기사명 검색어 |
+| size | number | No | 최대 반환 건수 (기본 8) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "vehicle_id": "veh_001",
+        "vehicle_no": "12가3456",
+        "device_serial_no": "DTG-001",
+        "driver_name": "홍길동",
+        "result_status": "WARNING"
+      }
+    ]
+  }
+}
+```
+
+### 10.3 검증 상세 조회
 
 **Endpoint:** `GET /api/admin/verifications/{verificationId}`
 
@@ -1597,28 +1633,25 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
       "vehicle_no": "12가3456",
       "result_status": "PASS",
       "severity": "INFO",
-      "check_items": {
-        "device_registered": "PASS",
-        "vehicle_mapped": "PASS",
-        "driver_mapped": "PASS",
-        "gps_received": "PASS",
-        "heartbeat_received": "PASS",
-        "app_invited": "PASS",
-        "first_login_done": "PASS"
-      },
+      "device_registered": "PASS",
+      "vehicle_mapped": "PASS",
+      "driver_mapped": "PASS",
+      "gps_check": "PASS",
+      "heartbeat_check": "PASS",
+      "gps_received": true,
+      "heartbeat_received": true,
       "last_received_at": "2026-03-25T10:00:00Z",
-      "location_summary": "서울 강남구",
       "checked_at": "2026-03-25T10:00:00Z"
     }
   }
 }
 ```
 
-### 10.3 검증 실행
+### 10.4 검증 실행
 
 **Endpoint:** `POST /api/admin/verifications/run`
 
-**목적:** 검증 실행 또는 재실행
+**목적:** 선택 차량 검증 또는 미완료 차량 재검증
 
 **Request Body:**
 ```json
@@ -1630,16 +1663,20 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| target_type | string | Yes | VEHICLE, DEVICE, DRIVER |
-| target_ids | string[] | Yes | 대상 ID 목록 |
+| target_type | string | No | 현재 `VEHICLE`만 사용 |
+| target_ids | string[] | No | 선택한 차량 ID 목록. 값이 없으면 ACTIVE 바인딩 중 `PASS`가 아닌 차량만 검증 |
+
+**주의사항:**
+- `target_ids`가 존재할 때 빈 배열이면 `400 VALIDATION_ERROR`가 반환됩니다.
+- 검증 대상 후보와 기본 재검증 대상은 모두 `vehicle_device_binding.status = 'ACTIVE'`인 차량만 포함합니다.
 
 **Response:**
 ```json
 {
   "success": true,
   "data": {
-    "request_id": "req_ver_001",
-    "accepted_count": 2
+    "checked_count": 2,
+    "checked_at": "2026-03-30T11:00:00Z"
   }
 }
 ```

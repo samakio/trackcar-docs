@@ -10,10 +10,11 @@
 
 ## 2. 기술 스택
 
-- **Framework**: React 18 + Next.js 14 (App Router)
+- **Framework**: React 18 + Vite + TypeScript
 - **UI Library**: Tailwind CSS + shadcn/ui
-- **State Management**: Zustand
-- **API Client**: Axios
+- **State Management**: React Query + local component state
+- **Form**: react-hook-form + zod
+- **API Client**: custom `apiClient.ts`
 - **Charts**: Recharts
 - **Auth**: AWS Cognito (JWT)
 
@@ -109,6 +110,7 @@ VITE_COGNITO_DOMAIN=https://trackcar-dev-auth.auth.ap-northeast-2.amazoncognito.
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/verifications` | 검증 목록 |
+| GET | `/verifications/candidates` | 검증 대상 차량 자동완성 검색 |
 | GET | `/verifications/{verificationId}` | 검증 상세 |
 | POST | `/verifications/run` | 검증 실행 |
 
@@ -242,9 +244,11 @@ api.interceptors.request.use((config) => {
 - 매핑 후보 자동 필터링
 
 **Verification**
-- GPS 수신 확인
-- 하트비트 확인
-- 앱 로그인 확인
+- 차량번호 / 장치 S/N / 기사명 자동완성 검색으로 검증 대상 선택
+- ACTIVE 차량-장치 매핑이 있는 차량만 자동완성 후보에 포함
+- DTG GPS 수신 확인
+- 하트비트 수신 확인
+- 기사 배정 여부 확인
 
 ---
 

@@ -643,6 +643,7 @@ public class AdminRequestContext {
 | Method | Path | Handler method | Request DTO | Response DTO | Role |
 |---|---|---|---|---|---|
 | GET | `/api/admin/verifications` | `listVerifications(...)` | `VerificationListQuery` | `VerificationListResponseData` | Installer, Operator, Admin |
+| GET | `/api/admin/verifications/candidates` | `listVerificationCandidates(...)` | `VerificationCandidateQuery` | `VerificationCandidateListResponseData` | Installer, Operator, Admin |
 | GET | `/api/admin/verifications/{verificationId}` | `getVerification(...)` | `VerificationDetailPath` | `VerificationDetailResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/verifications/run` | `runVerifications(...)` | `RunVerificationsRequest` | `RunVerificationsResponseData` | Installer, Operator, Admin |
 
@@ -1329,8 +1330,8 @@ public class RunVerificationsRequest {
 }
 
 public class RunVerificationsResponseData {
-    private String requestId;
-    private Integer acceptedCount;
+    private Integer checkedCount;
+    private String checkedAt;
 }
 ```
 
@@ -1745,7 +1746,7 @@ class AdminHandlerTest {
 - `GET /api/admin/owners` -> `adminRepository.findOwners(...)` 호출 여부
 - `POST /api/admin/owners` -> 기본 그룹 생성 flag 처리 여부
 - `POST /api/admin/drivers/{driverId}/create-linked-account` -> `cognitoUserManager.inviteUser(...)` 후 repository 저장 여부
-- `POST /api/admin/verifications/run` -> `accepted_count` 응답 매핑 여부
+- `POST /api/admin/verifications/run` -> `checked_count`, `checked_at` 응답 매핑 여부
 - `POST /api/admin/app-activations/{activationId}/resend-invite` -> Cognito 재초대 실패 시 오류 응답 여부
 
 ### 8.4 Repository 테스트 구조

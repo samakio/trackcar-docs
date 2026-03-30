@@ -1167,7 +1167,7 @@ components:
     enabled: true
     options: {variant: secondary}
     data_binding: null
-    description: 선택 장치 기준 연동 재검증 실행
+    description: 연동 검증 센터로 이동해 해당 장치가 연결된 차량 검증을 실행
 actions:
   - trigger: on_load
     target: device_page
@@ -1183,10 +1183,10 @@ actions:
     error_result: DTG 상세 조회 실패
   - trigger: on_click_reverify_device
     target: button_reverify_device
-    behavior: run_device_reverification
-    api_ref: POST /api/admin/verifications/run
-    success_result: 재검증 요청이 접수되었습니다 토스트 표시
-    error_result: 재검증 요청 실패 토스트 표시
+    behavior: navigate_to_verification_center
+    api_ref: GET /api/admin/verifications/candidates
+    success_result: 연동 검증 센터에서 관련 차량 후보를 검색할 수 있다.
+    error_result: 후보 검색 실패
 states:
   initial: 최근 생성 순 목록을 표시한다.
   normal: 목록/상세/이력을 조회한다.
@@ -1228,12 +1228,12 @@ api:
     purpose: DTG 상세 조회
     request: {path: {deviceId: string}}
     response: {device: object, status_history: array}
-  - method: POST
-    endpoint: /api/admin/verifications/run
-    purpose: 장치 기준 재검증 실행
+  - method: GET
+    endpoint: /api/admin/verifications/candidates
+    purpose: 장치와 연결된 차량 검증 후보 검색
     request:
-      body: {target_type: DEVICE, target_id: string}
-    response: {verification_request_id: string}
+      query: {keyword: string, size: number}
+    response: {items: array}
 navigation_rules:
   entry_points:
     - 메뉴 DTG Devices 클릭
@@ -2477,14 +2477,14 @@ screen:
   route: /verification
   menu_path: Verification
   roles: [Installer, Operator, Admin]
-  purpose: DTG-차량-기사-앱 상태를 검증하고 PASS/WARNING/FAIL을 판정한다.
+  purpose: 매핑 완료 차량 중 사용자가 선택한 차량의 DTG 디바이스 ↔ AWS IoT Core 통신 상태를 검증하고 PASS/WARNING/FAIL을 판정한다. ACTIVE 차량-장치 매핑이 있는 차량만 대상이 된다.
 layout:
   type: list_detail_split
   platform: web-desktop
   navigation:
     header: global_header
     sidebar: main_sidebar
-    tabs: [queue, result_detail]
+    tabs: [candidate_search, result_detail]
 data_scope:
   primary_entity: verification_result
   params: [keyword, result_status, severity, owner_id, page, size, sort]
@@ -2514,7 +2514,7 @@ components:
     visible: true
     enabled: true
     options:
-      columns: [target_type, vehicle_no, device_serial_no, driver_name, gps_received, heartbeat_received, app_login_checked, result_status, severity, checked_at]
+      columns: [vehicle_no, device_serial_no, driver_name, gps_check, heartbeat_check, result_status, severity, checked_at]
       row_click_action: load_result_detail
     data_binding: verifications.items
     description: 최근 검증 결과 목록
@@ -2527,7 +2527,17 @@ components:
     enabled: true
     options: {variant: primary}
     data_binding: null
-    description: 선택 대상 검증 실행
+    description: 자동완성 검색으로 선택한 차량 검증 실행
+  - id: dialog_verification_candidate_search
+    type: search_dialog
+    label: 검증 대상 차량 선택
+    required: false
+    readonly: false
+    visible: true
+    enabled: true
+    options: {search_by: [vehicle_no, device_serial_no, driver_name], single_select: true}
+    data_binding: verification_candidate
+    description: 차량번호 / 장치 S/N / 기사명으로 검증 후보 검색
   - id: detail_result_status
     type: status_badge
     label: 최종 판정
@@ -2546,7 +2556,7 @@ components:
     visible: true
     enabled: false
     options:
-      items: [device_registered, vehicle_mapped, driver_mapped, gps_received, heartbeat_received, app_invited, first_login_done]
+      items: [device_registered, vehicle_mapped, driver_mapped, gps_received, heartbeat_received]
     data_binding: verification_detail.check_items
     description: 세부 항목별 검증 성공 여부
   - id: detail_last_received_at
@@ -2571,7 +2581,7 @@ components:
     description: 최근 위치 좌표/주소 요약
   - id: button_retry_verification
     type: button
-    label: 재검증
+    label: 선택 차량 재검증
     required: false
     readonly: false
     visible: true
@@ -2588,10 +2598,16 @@ actions:
     error_result: 검증 목록 조회 실패
   - trigger: on_click_run_verification
     target: button_run_verification
-    behavior: request_verification_run
+    behavior: search_and_request_selected_vehicle_verification
     api_ref: POST /api/admin/verifications/run
-    success_result: 검증이 시작되었습니다 토스트를 표시한다.
+    success_result: 선택한 차량 검증이 시작되었습니다 토스트를 표시한다.
     error_result: 검증 시작 실패
+  - trigger: on_type_keyword_in_candidate_dialog
+    target: dialog_verification_candidate_search
+    behavior: search_verification_candidates
+    api_ref: GET /api/admin/verifications/candidates
+    success_result: 차량번호 / 장치 S/N / 기사명 자동완성 후보를 표시한다.
+    error_result: 후보 검색 실패
   - trigger: on_click_row
     target: table_verification_queue
     behavior: fetch_verification_detail
@@ -2600,9 +2616,9 @@ actions:
     error_result: 검증 상세 조회 실패
   - trigger: on_click_retry_verification
     target: button_retry_verification
-    behavior: rerun_selected_verification
+    behavior: rerun_selected_vehicle_verification
     api_ref: POST /api/admin/verifications/run
-    success_result: 재검증이 시작되었습니다.
+    success_result: 선택 차량 재검증이 시작되었습니다.
     error_result: 재검증 요청 실패
 states:
   initial: 최근 검증 결과를 최신순 표시
@@ -2618,7 +2634,7 @@ states:
       result: 서비스 활성화 전 확인 필요 안내를 표시한다.
 validation:
   selection:
-    rules: [검증 실행 시 최소 1개 대상 선택]
+    rules: [검증 실행 시 정확히 1개 대상 선택]
     messages:
       required: 검증할 대상을 선택해 주세요.
 permissions:
@@ -2635,20 +2651,26 @@ api:
       query: {keyword: string, result_status: array, severity: array, owner_id: string, page: number, size: number, sort: string}
     response: {items: array, page_info: object}
   - method: GET
+    endpoint: /api/admin/verifications/candidates
+    purpose: 검증 대상 차량 자동완성 검색
+    request:
+      query: {keyword: string, size: number}
+    response: {items: array}
+  - method: GET
     endpoint: /api/admin/verifications/{verificationId}
     purpose: 검증 상세 조회
     request: {path: {verificationId: string}}
     response: {verification: object}
   - method: POST
     endpoint: /api/admin/verifications/run
-    purpose: 검증 실행/재실행
+    purpose: 선택 차량 검증 실행/재실행
     request:
       body: {target_type: string, target_ids: array}
-    response: {request_id: string, accepted_count: number}
+    response: {checked_count: number, checked_at: string}
 navigation_rules:
   entry_points:
     - 메뉴 Verification 클릭
-    - Quick Mapping 저장 후 연동 검증
+    - Mapping 완료 후 대상 차량 검증
     - 대시보드 이상 건수 클릭
   exits:
     - App Activation 화면
@@ -2659,7 +2681,7 @@ ui_text:
   empty_message: 검증 이력이 없습니다.
   error_message: 검증 데이터를 불러오지 못했습니다.
   toast:
-    run_success: 검증이 시작되었습니다.
+    run_success: 선택한 차량 검증이 시작되었습니다.
     run_error: 검증 실행에 실패했습니다.
   confirm_message:
     retry_verification: 같은 대상을 다시 검증하시겠습니까?
