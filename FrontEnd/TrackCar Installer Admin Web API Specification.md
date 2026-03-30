@@ -348,9 +348,13 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 | name_or_company_name | string | Yes | 이름 또는 회사명 (2~100자) |
 | phone | string | Yes | 휴대폰번호 (KR 형식) |
 | email | string | **Yes** | 이메일 (OWNER 앱 계정 생성에 필요) |
-| business_no | string | No | 사업자번호 |
+| business_no | string | **Yes** | 사업자번호 (PERSONAL/BUSINESS 공통 필수) |
 | transport_biz_no | string | No | 운송사업자등록번호 (eTAS 전송용) |
 | default_group_name | string | No | 기본 그룹명 (미입력 시 "{이름} 기본그룹") |
+
+**주의사항:**
+- 고객사 유형과 무관하게 `business_no`는 필수입니다.
+- `owner_type`은 개인/법인 구분이고, `business_no`는 사업자 등록 여부이므로 서로 다른 축입니다.
 
 **Response (BUSINESS):**
 ```json
