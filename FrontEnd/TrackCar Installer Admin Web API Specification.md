@@ -1507,6 +1507,10 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
+**설치상태 자동 전이:**
+- DTG-차량 매핑이 성공하면 해당 차량의 `installation_status`는 `NOT_INSTALLED` 또는 `FAILED`에서 `INSTALLED`로 승격됩니다.
+- 이 단계에서는 `VERIFIED`를 강등하지 않습니다.
+
 ### 9.3 차량-DTG 매핑 해제
 
 **Endpoint:** `DELETE /api/admin/mappings/device-vehicle/{mappingId}`
@@ -1676,6 +1680,8 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 - `target_ids`가 존재할 때 빈 배열이면 `400 VALIDATION_ERROR`가 반환됩니다.
 - 검증 대상 후보와 기본 재검증 대상은 모두 `vehicle_device_binding.status = 'ACTIVE'`인 차량만 포함합니다.
 - GPS/하트비트 판정은 선택 차량의 최신 telemetry 수신 시각(`received_at`)을 기준으로 계산합니다.
+- 검증 결과가 `PASS`이면 해당 차량의 `installation_status`는 `INSTALLED` 또는 `FAILED`에서 `VERIFIED`로 승격됩니다.
+- `WARNING` 또는 `FAIL`은 차량 설치상태를 자동 강등하지 않습니다.
 
 **Response:**
 ```json

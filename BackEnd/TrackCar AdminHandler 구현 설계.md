@@ -638,6 +638,8 @@ public class AdminRequestContext {
 | GET | `/api/admin/mappings/candidates` | `getMappingCandidates(...)` | `MappingCandidateQuery` | `MappingCandidateResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/mappings/bundle` | `createMappingBundle(...)` | `CreateMappingBundleRequest` | `CreateMappingBundleResponseData` | Installer, Operator, Admin |
 
+> `createMappingBundle(...)` 성공 시, 차량 `install_status`는 `NOT_INSTALLED` 또는 `FAILED`에서 `INSTALLED`로 승격된다.
+
 ### 5.11 Verification API
 
 | Method | Path | Handler method | Request DTO | Response DTO | Role |
@@ -646,6 +648,8 @@ public class AdminRequestContext {
 | GET | `/api/admin/verifications/candidates` | `listVerificationCandidates(...)` | `VerificationCandidateQuery` | `VerificationCandidateListResponseData` | Installer, Operator, Admin |
 | GET | `/api/admin/verifications/{verificationId}` | `getVerification(...)` | `VerificationDetailPath` | `VerificationDetailResponseData` | Installer, Operator, Admin |
 | POST | `/api/admin/verifications/run` | `runVerifications(...)` | `RunVerificationsRequest` | `RunVerificationsResponseData` | Installer, Operator, Admin |
+
+> `runVerifications(...)` 결과가 `PASS`인 차량은 `install_status`를 `VERIFIED`로 승격한다. `WARNING`/`FAIL`은 설치상태를 강등하지 않는다.
 
 ### 5.12 App Activation API
 
