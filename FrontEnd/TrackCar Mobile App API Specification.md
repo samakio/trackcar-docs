@@ -59,18 +59,18 @@
 
 | 영역 | Endpoint | 상태 |
 |------|----------|------|
-| Home | `GET /dashboard` | 계획 |
-| Vehicles | `GET /vehicles` | 부분 구현 |
-| Vehicles | `GET /vehicles/{vehicleId}` | 부분 구현 |
-| Vehicle Map | `GET /vehicles/map` | 계획 |
+| Home | `GET /dashboard` | 구현 |
+| Vehicles | `GET /vehicles` | 구현 |
+| Vehicles | `GET /vehicles/{vehicleId}` | 구현 |
+| Vehicle Map | `GET /vehicles/map` | 구현 |
 | Trips | `GET /trips` | 부분 구현 |
 | Trips | `GET /trips/{tripId}` | 부분 구현 |
 | Alerts | `GET /alerts` | 부분 구현 |
 | Alerts | `GET /alerts/{alertId}` | 계획/드리프트 존재 |
 | Alerts | `PATCH /alerts/{alertId}/read` | 구현 |
-| Alerts | `PATCH /alerts/read-all` | 구현 있으나 보완 필요 |
-| My | `GET /me` | 부분 구현 |
-| My | `PATCH /me/notification-settings` | 구현 있으나 보완 필요 |
+| Alerts | `PATCH /alerts/read-all` | 구현 |
+| My | `GET /me` | 구현 |
+| My | `PATCH /me/notification-settings` | 구현 |
 | Operations | `GET/POST/PATCH /staff-users...` | 계획/부분 구현 |
 | Operations | `GET/POST/PATCH/DELETE /groups...` | 계획/부분 구현 |
 | Operations | `GET/PUT/DELETE /vehicle-driver-links...` | 부분 구현 |
@@ -110,7 +110,7 @@
 }
 ```
 
-> 현재 구현은 위 목표 응답과 다를 수 있으며, Home 재설계에 맞춘 backend 보강이 필요하다.
+> 현재 backend는 KPI 4개(`total/running/idle/offline`)를 반환한다. 세부 계산 기준은 차량 `running_status`를 사용한다.
 
 ---
 
@@ -134,7 +134,7 @@
 | page | number | No | 페이지 번호 |
 | size | number | No | 페이지 크기 |
 
-**Target Response:**
+**Response:**
 ```json
 {
   "success": true,
@@ -169,7 +169,7 @@
 
 **권한:** OWNER, STAFF
 
-**Target Response:**
+**Response:**
 ```json
 {
   "success": true,
@@ -196,7 +196,7 @@
 }
 ```
 
-### 5.3 전체차량위치 조회 `계획`
+### 5.3 전체차량위치 조회
 
 **Endpoint:** `GET /v1/mobile/vehicles/map`
 
@@ -204,7 +204,7 @@
 
 **목적:** 전체 차량 위치 지도용 marker 데이터 조회
 
-**Target Response:**
+**Response:**
 ```json
 {
   "success": true,
@@ -292,7 +292,7 @@
 
 **권한:** OWNER, STAFF
 
-### 7.2 알림 상세 조회 `계획`
+### 7.2 알림 상세 조회 `부분 구현`
 
 **Endpoint:** `GET /v1/mobile/alerts/{alertId}`
 
@@ -349,9 +349,40 @@
 
 **Endpoint:** `GET /v1/mobile/me`
 
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "me": {
+      "user_id": "usr_001",
+      "name": "홍길동",
+      "email": "hong@test.com",
+      "role": "OWNER",
+      "organization": {
+        "organization_id": "org_001",
+        "name": "통합테스트운수A"
+      },
+      "notification_settings": {
+        "push_enabled": true,
+        "email_enabled": true
+      }
+    }
+  }
+}
+```
+
 ### 9.2 내 알림 설정 변경
 
 **Endpoint:** `PATCH /v1/mobile/me/notification-settings`
+
+**Request Body:**
+```json
+{
+  "push_enabled": true,
+  "email_enabled": false
+}
+```
 
 ---
 

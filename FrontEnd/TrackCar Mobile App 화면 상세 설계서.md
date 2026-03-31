@@ -41,7 +41,7 @@ screen:
   route: /home
   roles: [OWNER, STAFF]
   purpose: 현재 차량 운영 상태를 KPI로 요약하고 전체차량위치 화면으로 진입한다.
-  api_status: planned_backend_alignment
+  api_status: implemented_backend_alignment
 
 layout:
   header: 조직 선택 + 마지막 갱신 시각 + 새로고침
@@ -81,7 +81,7 @@ screen:
   route: /vehicles/map
   roles: [OWNER, STAFF]
   purpose: 조직 내 차량 전체를 지도에서 확인하고 특정 차량 상세로 이동한다.
-  api_status: planned_backend_alignment
+  api_status: implemented_backend_alignment
 
 layout:
   header: 뒤로가기 + 검색 + 그룹 필터
@@ -276,7 +276,7 @@ screen:
   route: /alerts
   roles: [OWNER, STAFF]
   purpose: 차량 이상, 통신, 운영 알림을 조회하고 읽음 처리한다.
-  api_status: partial_backend_alignment
+  api_status: implemented_backend_alignment
 
 layout:
   header: 제목 + 필터

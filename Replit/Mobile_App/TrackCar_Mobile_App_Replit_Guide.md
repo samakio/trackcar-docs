@@ -138,17 +138,19 @@ Home은 **관제 요약** 역할만 담당한다.
 ## 8. API 범위 가이드
 
 ### 바로 구현 가능한 조회 중심 API
+- `GET /v1/mobile/dashboard`
 - `GET /v1/mobile/vehicles`
 - `GET /v1/mobile/vehicles/{vehicleId}`
+- `GET /v1/mobile/vehicles/map`
 - `GET /v1/mobile/trips`
 - `GET /v1/mobile/trips/{tripId}`
 - `GET /v1/mobile/alerts`
 - `PATCH /v1/mobile/alerts/{alertId}/read`
+- `PATCH /v1/mobile/alerts/read-all`
 - `GET /v1/mobile/me`
+- `PATCH /v1/mobile/me/notification-settings`
 
 ### 계획 또는 backend 보강 필요 API
-- `GET /v1/mobile/dashboard`
-- `GET /v1/mobile/vehicles/map`
 - `GET/POST/PATCH /v1/mobile/staff-users...`
 - `GET/POST/PATCH/DELETE /v1/mobile/groups...`
 - `GET/POST/PATCH /v1/mobile/alert-settings...`
@@ -164,12 +166,12 @@ Home은 **관제 요약** 역할만 담당한다.
 - Home (축소 KPI)
 - Vehicles
 - Vehicle Detail
+- Vehicle Map
 - Trips
 - Alerts
 - My
 
 ### 2단계
-- 전체차량위치
 - 운영 메뉴 진입
 
 ### 3단계
@@ -196,8 +198,17 @@ Home은 **관제 요약** 역할만 담당한다.
 
 1. 인증/세션
 2. 차량 목록/상세
-3. 운행 이력
-4. 알림
-5. 내 정보
-6. 전체차량위치
+3. 전체차량위치
+4. 운행 이력
+5. 알림
+6. 내 정보
 7. 운영 메뉴
+
+---
+
+## 12. 현재 backend 기준 메모
+
+- `GET /v1/mobile/dashboard` 사용 가능
+- `GET /v1/mobile/vehicles/map` 사용 가능
+- `PATCH /v1/mobile/alerts/read-all`는 organization 범위로 처리되도록 보정됨
+- `PATCH /v1/mobile/me/notification-settings`는 실제 `app_user.push_enabled`, `email_enabled`를 업데이트함
