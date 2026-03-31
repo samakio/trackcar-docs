@@ -259,6 +259,11 @@ api.interceptors.request.use((config) => {
 - DTG GPS 수신 확인
 - 하트비트 수신 확인
 - 기사 배정 여부 확인
+- 최신 telemetry 판정 기준은 DynamoDB `VehicleLatestLocation`의 `TELEMETRY#LATEST.received_at`입니다.
+
+**DTG Simulator Integration Test Tip**
+- 시뮬레이터는 차량 추가 API에서 `deviceId`, `vehicleId`, `plateNumber`를 고정값으로 받을 수 있습니다.
+- 통합테스트 시 시뮬레이터 `deviceId`는 관리자 화면의 장치 `serial_no` 또는 내부 `device_id`와 매칭되도록 준비해야 합니다.
 
 ---
 

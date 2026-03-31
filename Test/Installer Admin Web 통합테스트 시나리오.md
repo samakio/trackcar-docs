@@ -32,15 +32,15 @@
 
 - `dtg-device-simulator`는 `iot` 모드로 실행한다.
 - MQTT topic은 `dtg/{deviceId}/telemetry`를 사용해야 한다.
-- 시뮬레이터가 사용하는 `deviceId`와 관리자 화면에서 매핑하는 장치의 내부 `device_id` 계약이 맞아야 한다.
+- 현재 시뮬레이터는 차량 추가 API에서 `deviceId`, `vehicleId`, `plateNumber`를 직접 고정값으로 넣을 수 있다.
+- 시뮬레이터가 사용하는 `deviceId`는 관리자 화면에서 등록한 장치의 `serial_no` 또는 내부 `device_id`와 매칭되어야 한다.
 - 최소 1회 이상 batch flush가 일어날 수 있도록 충분한 시간(기본 30초 이상)을 확보한다.
 
 ### 2.3 중요한 주의사항
 
 고객사명, 차량번호, 장치 시리얼번호, 기사명 등은 본 문서의 **예정된 테스트 값**을 사용한다.
 
-단, DTG 시뮬레이터의 실제 `deviceId`와 서버 매핑 기준 `device_id`는 현재 구현상 별도 정렬 확인이 필요하다.
-이 계약이 맞지 않으면 연동 검증은 실패할 수 있다.
+단, DTG 시뮬레이터의 `deviceId`와 서버가 바인딩 조회에 쓰는 장치 식별값(`device_id` 또는 `serial_no`)이 맞지 않으면 연동 검증은 실패할 수 있다.
 
 ---
 
@@ -110,11 +110,11 @@
 
 #### DTG identity 정렬
 
-현재 구현상 시뮬레이터의 `deviceId`는 랜덤 생성될 수 있으므로, 테스트 실행 전 아래를 먼저 확인한다.
+현재 구현에서는 시뮬레이터 차량 추가 API로 `deviceId`를 고정할 수 있으므로, 테스트 실행 시 문서의 예정된 값을 그대로 사용한다.
 
-1. 시뮬레이터 차량 1대 생성
+1. 시뮬레이터 차량 1대 생성 시 `deviceId`를 명시적으로 지정
 2. 반환된 `deviceId` 확인
-3. 서버가 바인딩 조회에 쓰는 `device_id`와 실제로 일치하는지 확인
+3. 서버가 바인딩 조회에 쓰는 `device_id` 또는 `serial_no`와 일치하는지 확인
 
 **사전 체크포인트**
 - 시뮬레이터가 발행하는 `deviceId`
@@ -125,7 +125,7 @@
 
 #### Step 1. DTG 시뮬레이터 실행
 - `dtg-device-simulator`를 `iot` 프로필로 실행
-- 차량 1대 생성
+- 차량 1대 생성 (`deviceId`, `vehicleId`, `plateNumber` 고정 입력)
 - 반환값 기록
   - `deviceId`
   - `vehicleId`
@@ -134,6 +134,7 @@
 **기대 결과**
 - 시뮬레이터가 AWS IoT Core로 publish 준비 완료 상태여야 한다.
 - 연결 실패 로그가 없어야 한다.
+- `application-iot.yml`의 `initial-count: 0` 기준으로, 명시적으로 추가한 테스트 차량만 메모리에 존재해야 한다.
 
 #### Step 2. 법인 고객사 생성
 입력값:

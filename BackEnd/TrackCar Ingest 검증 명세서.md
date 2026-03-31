@@ -32,7 +32,7 @@
 
 ## 3) 입력 계약 (MQTT)
 
-- Topic 패턴: `trackcar/{deviceId}/telemetry`
+- Topic 패턴: `dtg/{deviceId}/telemetry`
 - Payload: 제조사별 원본 payload + 공통 운영 필드
 - 공통 필수 필드(권장):
   - `interfaceCode`
@@ -59,6 +59,7 @@
    - `deviceId` 기준 서버 매핑 tenant와 binding 일치 검증
 4. **차량-디바이스 바인딩 검증**
    - `vehicle_device_binding` 존재/활성 확인
+   - 구현상 `deviceId`는 `vehicle_device_binding.device_id` 또는 `device.serial_no`와 매칭될 수 있다.
 5. **인터페이스 버전 검증**
    - payload `interfaceCode/interfaceVersion`
    - `dtg_interface_catalog(interface_code, version)` 활성 상태

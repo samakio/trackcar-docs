@@ -380,8 +380,9 @@ public class AuroraRepository {
                    o.transport_biz_no
             FROM vehicle_device_binding vdb
             JOIN vehicle v ON vdb.vehicle_id = v.vehicle_id
+            JOIN device d ON vdb.device_id = d.device_id
             JOIN organization o ON v.organization_id = o.organization_id
-            WHERE vdb.device_id = $1
+            WHERE (vdb.device_id = $1 OR d.serial_no = $1)
             AND vdb.status = 'ACTIVE'
             AND v.deleted_at IS NULL
             """;

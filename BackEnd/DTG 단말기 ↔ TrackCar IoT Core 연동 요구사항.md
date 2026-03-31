@@ -80,9 +80,9 @@
 #### A. 운영 토픽
 
 - Publish (required)
-  - `trackcar/{deviceId}/telemetry`
+  - `dtg/{deviceId}/telemetry`
 - Subscribe (optional)
-  - `trackcar/{deviceId}/config`
+  - `dtg/{deviceId}/config`
 
 #### B. 정책 원칙
 
@@ -103,8 +103,8 @@
 3. 최초 연결 시 JITR 등록 처리
 4. Lambda가 사업자 DB 기준으로 `deviceId`, 인증서 Subject 식별값(`CN`, `serialNumber`), tenant, vehicle binding, 폐기/중복 상태를 검증
 5. 검증 통과 시 플랫폼은 AWS IoT Core 측에서 인증서를 활성화하고, 필요 시 Thing 및 Policy 연결을 수행
-6. 필요 시 `trackcar/{deviceId}/config` subscribe
-7. `trackcar/{deviceId}/telemetry` publish 시작
+6. 필요 시 `dtg/{deviceId}/config` subscribe
+7. `dtg/{deviceId}/telemetry` publish 시작
 8. 서버가 `deviceId` 기반 tenant/binding/interface 매핑을 수행
 
 ### 3.5 통신 음영 지역 예외 처리
@@ -240,8 +240,8 @@
 2. 단말별 고유 인증서 발급/탑재 가능 여부 및 공용 인증서 미사용 보장 여부
 3. 인증서 Subject profile(`CN`, `serialNumber`, `OU`, `O`) 적용 계획
 4. MQTT `clientId = deviceId` 정책 준수 가능 여부
-5. 고정 telemetry topic(`trackcar/{deviceId}/telemetry`) 전송 가능 여부
-6. 선택 config topic(`trackcar/{deviceId}/config`) 지원 가능 여부
+5. 고정 telemetry topic(`dtg/{deviceId}/telemetry`) 전송 가능 여부
+6. 선택 config topic(`dtg/{deviceId}/config`) 지원 가능 여부
 7. 오프라인 버퍼(시간/건수), 재전송 정책, overflow 정책
 8. `seq` / `missingReason` 규칙 구현 가능 여부
 9. 개발/시험/양산 일정

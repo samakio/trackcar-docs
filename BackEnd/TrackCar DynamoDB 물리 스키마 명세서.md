@@ -46,24 +46,14 @@ Billing: On-Demand
 | 속성 | 타입 | 키 | 설명 |
 |------|------|-----|------|
 | PK | String | PK | `VEHICLE#{vehicleId}` |
-| SK | String | SK | `STATE` |
+| SK | String | SK | `TELEMETRY#LATEST` |
 | vehicleId | String | - | 차량 UUID |
-| vehicleNo | String | - | 차량번호 |
-| lat | Number | - | 위도 |
-| lng | Number | - | 경도 |
+| deviceId | String | - | 장치 식별값 |
+| latitude | Number | - | 위도 |
+| longitude | Number | - | 경도 |
 | speed | Number | - | 속도 (km/h) |
-| heading | Number | - | 방위각 (0-360°) |
-| ignition | Boolean | - | 시동 상태 |
-| driverId | String | - | 연결된 기사 ID |
-| driverName | String | - | 연결된 기사명 |
-| groupId | String | - | 소속 그룹 ID |
-| groupName | String | - | 소속 그룹명 |
-| organizationId | String | - | 소속 조직 ID |
-| tripStatus | String | - | 운행 상태 (RUNNING, IDLE, OFFLINE) |
-| deviceStatus | String | - | 장치 상태 (ONLINE, OFFLINE) |
-| lastReceivedAt | String | - | 마지막 수신 시각 (ISO8601) |
-| updatedAt | String | - | 최종 업데이트 시각 (ISO8601) |
-| TTL | Number | TTL | TTL (unixtime, 2일 후 만료) |
+| status | String | - | 상태값 (현재 `ACTIVE`) |
+| received_at | String | - | 마지막 수신 시각 (ISO8601) |
 
 ### 2.3 GSI (Global Secondary Index)
 
@@ -115,7 +105,7 @@ Projection: ALL
 
 | 패턴 | PK | SK | 인덱스 | 설명 |
 |------|----|----|--------|------|
-| 단일 차량 최신 위치 | VEHICLE#{id} | STATE | - | 차량별 실시간 위치 조회 |
+| 단일 차량 최신 위치 | VEHICLE#{id} | TELEMETRY#LATEST | - | 차량별 최신 telemetry 조회 |
 | 조직별 차량 목록 | - | - | GSI-OrganizationIndex | 조직 전체 차량 현황 |
 | 그룹별 차량 목록 | - | - | GSI-GroupIndex | 그룹 내 차량 현황 |
 | 운행중 차량 목록 | - | - | GSI-TripStatusIndex | RUNNING 상태 차량 |
@@ -123,12 +113,10 @@ Projection: ALL
 
 ### 2.5 TTL 정책
 
-```
-TTL: lastReceivedAt + 172800 (2일)
-```
+현재 구현에서는 `VehicleLatestLocation`에 TTL을 기록하지 않는다.
 
-- 마지막 수신 후 2일 경과 시 자동 삭제
-- DynamoDB Streams로 삭제 이벤트捕獲하여 Aurora 백업 가능
+- 최신 위치 1건 overwrite 용도로 사용한다.
+- 연동 검증과 모바일 최신 위치 조회는 `received_at` 기준으로 최근 수신 여부를 판단한다.
 
 ---
 

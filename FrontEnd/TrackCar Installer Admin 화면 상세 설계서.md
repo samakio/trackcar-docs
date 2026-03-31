@@ -2556,9 +2556,9 @@ components:
     visible: true
     enabled: false
     options:
-      items: [device_registered, vehicle_mapped, driver_mapped, gps_received, heartbeat_received]
-    data_binding: verification_detail.check_items
-    description: 세부 항목별 검증 성공 여부
+      items: [device_registered, vehicle_mapped, driver_mapped, gps_check, heartbeat_check]
+    data_binding: verification_detail
+    description: 세부 항목별 검증 성공 여부 (`gps_check`, `heartbeat_check` 포함)
   - id: detail_last_received_at
     type: text
     label: 최종 수신 시각
@@ -2568,7 +2568,7 @@ components:
     enabled: false
     options: {format: datetime}
     data_binding: verification_detail.last_received_at
-    description: 서버 기준 마지막 수신 시각
+    description: `VehicleLatestLocation`의 `received_at` 기준 마지막 수신 시각
   - id: detail_location_summary
     type: text
     label: 최근 위치 정보
@@ -2578,7 +2578,7 @@ components:
     enabled: false
     options: {}
     data_binding: verification_detail.location_summary
-    description: 최근 위치 좌표/주소 요약
+    description: 현재 구현에서는 사용하지 않는 예약 필드
   - id: button_retry_verification
     type: button
     label: 선택 차량 재검증

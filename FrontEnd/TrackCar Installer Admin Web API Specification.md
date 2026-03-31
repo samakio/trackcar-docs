@@ -220,6 +220,8 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 }
 ```
 
+> `gps_check`, `heartbeat_check`, `last_received_at`는 현재 `VehicleLatestLocation` DynamoDB 테이블의 `TELEMETRY#LATEST` / `received_at` 기준으로 계산됩니다.
+
 ---
 
 ## 3. Owner API
@@ -1673,6 +1675,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
 **주의사항:**
 - `target_ids`가 존재할 때 빈 배열이면 `400 VALIDATION_ERROR`가 반환됩니다.
 - 검증 대상 후보와 기본 재검증 대상은 모두 `vehicle_device_binding.status = 'ACTIVE'`인 차량만 포함합니다.
+- GPS/하트비트 판정은 선택 차량의 최신 telemetry 수신 시각(`received_at`)을 기준으로 계산합니다.
 
 **Response:**
 ```json
