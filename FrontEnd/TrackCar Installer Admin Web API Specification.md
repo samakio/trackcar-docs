@@ -255,7 +255,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
         "name_or_company_name": "테스트운수",
         "phone": "01012345678",
         "business_no": "1234567890",
-        "transport_biz_no": "운송12345",
+        "transport_biz_no": "1234567890",
         "default_group_name": "기본그룹",
         "vehicle_count": 10,
         "driver_count": 15,
@@ -299,7 +299,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
       "phone": "01012345678",
       "email": "test@test.co.kr",
       "business_no": "1234567890",
-      "transport_biz_no": "운송12345",
+      "transport_biz_no": "1234567890",
       "default_group_name": "기본그룹",
       "vehicle_count": 10,
       "driver_count": 15,
@@ -337,7 +337,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "phone": "01012345678",
   "email": "test@test.co.kr",
   "business_no": "1234567890",
-  "transport_biz_no": "운송12345",
+  "transport_biz_no": "1234567890",
   "default_group_name": "테스트운수 기본그룹"
 }
 ```
@@ -404,7 +404,7 @@ GET /api/admin/dashboard?date_from=2026-03-01&date_to=2026-03-25&owner_type=ALL
   "phone": "01098765432",
   "email": "updated@test.co.kr",
   "business_no": "0987654321",
-  "transport_biz_no": "운송54321",
+  "transport_biz_no": "2345678901",
   "status": "ACTIVE"
 }
 ```
