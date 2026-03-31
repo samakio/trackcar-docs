@@ -150,10 +150,13 @@ Home은 **관제 요약** 역할만 담당한다.
 - `GET /v1/mobile/me`
 - `PATCH /v1/mobile/me/notification-settings`
 
-### 계획 또는 backend 보강 필요 API
+### 구현된 운영 API
 - `GET/POST/PATCH /v1/mobile/staff-users...`
 - `GET/POST/PATCH/DELETE /v1/mobile/groups...`
 - `GET/POST/PATCH /v1/mobile/alert-settings...`
+
+### 후속 구현 필요 API
+- 위치 알림 관련 API
 
 > 구현 전 `TrackCar Mobile App API Specification.md`의 상태 표시(구현/계획)를 확인할 것.
 
@@ -175,9 +178,7 @@ Home은 **관제 요약** 역할만 담당한다.
 - 운영 메뉴 진입
 
 ### 3단계
-- 담당자 관리
-- 그룹 관리
-- 알림 관리
+- 운영 메뉴(담당자 관리 / 그룹 관리 / 알림 관리)
 
 ### 4단계
 - 위치 알림
@@ -212,3 +213,4 @@ Home은 **관제 요약** 역할만 담당한다.
 - `GET /v1/mobile/vehicles/map` 사용 가능
 - `PATCH /v1/mobile/alerts/read-all`는 organization 범위로 처리되도록 보정됨
 - `PATCH /v1/mobile/me/notification-settings`는 실제 `app_user.push_enabled`, `email_enabled`를 업데이트함
+- `staff-users`, `groups`, `alert-settings` API는 기본 CRUD/설정 저장 기준으로 사용 가능

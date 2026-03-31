@@ -71,10 +71,10 @@
 | Alerts | `PATCH /alerts/read-all` | 구현 |
 | My | `GET /me` | 구현 |
 | My | `PATCH /me/notification-settings` | 구현 |
-| Operations | `GET/POST/PATCH /staff-users...` | 계획/부분 구현 |
-| Operations | `GET/POST/PATCH/DELETE /groups...` | 계획/부분 구현 |
+| Operations | `GET/POST/PATCH /staff-users...` | 구현 |
+| Operations | `GET/POST/PATCH/DELETE /groups...` | 구현 |
 | Operations | `GET/PUT/DELETE /vehicle-driver-links...` | 부분 구현 |
-| Operations | `GET/POST/PATCH /alert-settings...` | 계획 |
+| Operations | `GET/POST/PATCH /alert-settings...` | 구현 |
 
 ---
 
@@ -310,7 +310,7 @@
 
 ## 8. Operations API (OWNER)
 
-### 8.1 담당자 관리 `계획 중심`
+### 8.1 담당자 관리
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
@@ -319,7 +319,12 @@
 | PATCH | `/v1/mobile/staff-users/{staffUserId}` | 담당자 수정 |
 | PATCH | `/v1/mobile/staff-users/{staffUserId}/status` | 활성/비활성 |
 
-### 8.2 그룹 관리 `계획 중심`
+**주의사항:**
+- 생성 시 Cognito 초대와 `app_user(role=STAFF)` 생성이 함께 수행된다.
+- 수정 범위는 현재 `name`, `phone`, `group_id` 중심이다.
+- 상태 변경은 `ACTIVE` / `INACTIVE` 기준이다.
+
+### 8.2 그룹 관리
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
@@ -328,7 +333,7 @@
 | PATCH | `/v1/mobile/groups/{groupId}` | 그룹 수정 |
 | DELETE | `/v1/mobile/groups/{groupId}` | 그룹 삭제 |
 
-### 8.3 알림 관리 `계획`
+### 8.3 알림 관리
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
@@ -399,9 +404,7 @@
 - My
 
 후속 구현:
-- 담당자 관리
-- 그룹 관리
-- 알림 관리
+- 위치 알림
 
 ### 10.2 주의사항
 - 현재 backend는 일부 모바일 API가 스텁 또는 부분 구현 상태다.
